@@ -1,19 +1,18 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using backend.Domains.Entities;
 
-namespace backend.Domains.Entities
+public class TimeRegistered
 {
-    public class TimeRegistered
-    {
-        [Key]
-        public int Id { get; set; }
-        public required string UserId { get; set; }
-        
-        [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
-        public required DateTime Date { get; set; }
-        public required double Hours { get; set; }
-        public string? Comment { get; set; }
-        public string? Status { get; set; }
-    }
+    public int Id { get; set; }
+
+    public string UserId { get; set; } // FK to AppUser
+
+    public AppUser User { get; set; } // Navigation
+
+    public DateTime Date { get; set; }
+
+    public double Hours { get; set; }
+
+    public string? Comment { get; set; }
+
+    public string Status { get; set; }
 }

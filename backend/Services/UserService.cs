@@ -20,24 +20,24 @@ namespace backend.Services
             _repository = repository;
         }
 
-        public async Task<IEnumerable<UserDto>> GetAllUsers()
+        public async Task<IEnumerable<AppUserDto>> GetAllUsers()
         {
             var users = await _userManager.Users.ToListAsync();
 
-            var userDtos = new List<UserDto>();
+            var appUserDtos = new List<AppUserDto>();
 
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
 
-                userDtos.Add(new UserDto
+                appUserDtos.Add(new AppUserDto
                 {
                     Id = user.Id,
                     Email = user.Email,
                     Role = roles.FirstOrDefault() ?? "None"
                 });
             }
-            return userDtos;
+            return appUserDtos;
         }
     }
 }

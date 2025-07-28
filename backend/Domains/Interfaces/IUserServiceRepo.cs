@@ -4,6 +4,6 @@ namespace backend.Domains.Interfaces
 {
     public interface IUserService
     {
-        Task<IEnumerable<UserDto>> GetAllUsers();
+        Task<IEnumerable<AppUserDto>> GetAllUsers();
     }
 }
