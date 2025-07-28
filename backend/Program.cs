@@ -1,6 +1,5 @@
 using backend.Domains.Entities;
 using backend.Domains.Interfaces;
-using backend.Domains.Models;
 using backend.Repositories;
 using backend.Services;
 using Microsoft.AspNetCore.Identity;
@@ -39,6 +38,7 @@ builder.Services.AddCors(opt =>
 });
 
 var app = builder.Build();
+// Managing Roles with Identity
 using (var scope = app.Services.CreateScope())
 {
     var manageRoles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();

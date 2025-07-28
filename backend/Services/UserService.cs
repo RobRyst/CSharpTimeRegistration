@@ -64,14 +64,12 @@ namespace backend.Services
                 LastName = dto.LastName
             };
 
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (result.Succeeded)
+            var createUser = await _userManager.CreateAsync(user, dto.Password);
+            if (createUser.Succeeded)
             {
                 await _userManager.AddToRoleAsync(user, "User");
             }
-
-            return result;
+            return createUser;
         }
-
     }
 }
