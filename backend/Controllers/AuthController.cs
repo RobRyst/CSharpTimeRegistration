@@ -14,9 +14,9 @@ namespace backend.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly TokenService TokenService;
-        private readonly ILogger _logger;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(UserManager<AppUser> userManager, TokenService jwtTokenService, ILogger logger)
+        public AuthController(UserManager<AppUser> userManager, TokenService jwtTokenService, ILogger<AuthController> logger)
         {
             _userManager = userManager;
             TokenService = jwtTokenService;
@@ -80,6 +80,48 @@ namespace backend.Controllers
                 _logger.LogError(ex, "An error occurred during login");
                 return StatusCode(500, "An error occurred during login");
             }
+        }
+        
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] CreateUserDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+                return BadRequest("Email and password are required");
+
+            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+            if (existingUser != null)
+                return Conflict("A user with this email already exists");
+
+            var user = new AppUser
+            {
+                Email = dto.Email,
+                UserName = dto.Email,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName
+            };
+
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            await _userManager.AddToRoleAsync(user, "User");
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = TokenService.CreateToken(user, roles);
+
+            return Ok(new
+            {
+                token,
+                user = new
+                {
+                    user.Id,
+                    user.Email,
+                    user.UserName,
+                    roles
+                }
+            });
+
         }
     }
 }

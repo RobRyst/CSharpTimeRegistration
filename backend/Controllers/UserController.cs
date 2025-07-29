@@ -58,6 +58,7 @@ namespace backend.Controllers
             }
         }
 
+/*
         [Authorize]
         [HttpPost("add-users")]
         public async Task<IActionResult> AddUser([FromBody] CreateUserDto dto)
@@ -74,6 +75,7 @@ namespace backend.Controllers
                 return StatusCode(500, "Couldn't Create User");
             }
         }
+*/
 
         [Authorize]
         [HttpGet("profile")]

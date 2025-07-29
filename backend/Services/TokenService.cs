@@ -38,7 +38,7 @@ namespace backend.Services
             var jwtKey = _config["Jwt:Key"];
             if (string.IsNullOrEmpty(jwtKey))
             {
-                Console.WriteLine("❌ JWT Key is missing from configuration");
+                Console.WriteLine("JWT Key is missing from configuration");
                 throw new InvalidOperationException("JWT Key is not configured");
             }
 

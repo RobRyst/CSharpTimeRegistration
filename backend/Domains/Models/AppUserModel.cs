@@ -4,7 +4,7 @@ namespace backend.Domains.Models
 {
     public class AppUserModel : IdentityUser
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
     }
 }
