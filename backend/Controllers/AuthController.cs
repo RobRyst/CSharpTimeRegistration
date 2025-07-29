@@ -81,7 +81,6 @@ namespace backend.Controllers
                 return StatusCode(500, "An error occurred during login");
             }
         }
-        
         [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] CreateUserDto dto)

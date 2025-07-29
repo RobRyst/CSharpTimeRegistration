@@ -11,36 +11,36 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// EF Core
+// ------------------ EF Core ------------------
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
     ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
-// Identity
+// ------------------ Identity ------------------
 builder.Services.AddIdentity<AppUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// Repositories & Services
+// ------------------ Dependency Injection ------------------
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<TokenService>();
 
-// JWT
+// ------------------ JWT Authentication ------------------
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey))
     throw new InvalidOperationException("JWT key is missing in configuration");
+
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; // Add this line
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false; // Set to false for development
+    options.RequireHttpsMetadata = false;
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -48,21 +48,32 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = false,
         ValidateAudience = false,
-        ValidateLifetime = true, // Add this
-        ClockSkew = TimeSpan.Zero // Add this to avoid time sync issues
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
     };
 });
 
+// ------------------ Authorization ------------------
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build());
 
-// Swagger & Controllers
+// ------------------ CORS ------------------
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// ------------------ Swagger & Controllers ------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-// ChatGPT Swagger token check
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Your API", Version = "v1" });
@@ -91,40 +102,29 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddCors(opt =>
-{
-    opt.AddPolicy("CorsPolicy", policyBuilder =>
-    {
-        policyBuilder.AllowAnyHeader()
-                     .AllowAnyMethod()
-                     .WithOrigins("http://localhost:5173")
-                     .AllowCredentials();
-    });
-});
-
 var app = builder.Build();
 
-// Choose Roles
+// ------------------ Choose Roles ------------------
 using (var scope = app.Services.CreateScope())
 {
-    var manageRoles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     string[] roles = ["User", "Admin"];
     foreach (var role in roles)
     {
-        if (!await manageRoles.RoleExistsAsync(role))
+        if (!await roleManager.RoleExistsAsync(role))
         {
-            await manageRoles.CreateAsync(new IdentityRole(role));
+            await roleManager.CreateAsync(new IdentityRole(role));
         }
     }
 }
 
+// ------------------ Middleware ------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
