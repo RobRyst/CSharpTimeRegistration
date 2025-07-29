@@ -10,12 +10,7 @@ namespace backend.Services
 {
     public class UserService : IUserService
     {
-        private readonly UserService _userService;
-        private readonly IUserRepo _repository;
-        private readonly ApplicationDbContext _db;
         private readonly UserManager<AppUser> _userManager;
-
-
         public UserService(UserManager<AppUser> userManager)
         {
             _userManager = userManager;

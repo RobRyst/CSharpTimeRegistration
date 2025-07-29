@@ -2,6 +2,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 using backend.Domains.Interfaces;
 using backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -20,13 +21,14 @@ namespace backend.Controllers
             _userService = userService;
         }
 
+        [Authorize]
         [HttpGet("users")]
         public async Task<IActionResult> GetAllUsers()
         {
             try
             {
-            var users = await _userService.GetAllUsers();
-            return Ok(users);
+                var users = await _userService.GetAllUsers();
+                return Ok(users);
             }
             catch (Exception ex)
             {
@@ -35,6 +37,7 @@ namespace backend.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(string id)
         {
@@ -51,6 +54,7 @@ namespace backend.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost("add-users")]
         public async Task<IActionResult> AddUser([FromBody] CreateUserDto dto)
         {
@@ -65,6 +69,22 @@ namespace backend.Controllers
                 _logger.LogError(ex, "Couldn't Create User");
                 return StatusCode(500, "Couldn't Create User");
             }
+        }
+        
+        [Authorize]
+        [HttpGet("profile")]
+        public IActionResult GetProfile()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+            var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+
+            return Ok(new
+            {
+                UserId = userId,
+                Email = userEmail,
+                Roles = roles
+            });
         }
     }
 }
