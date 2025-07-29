@@ -7,6 +7,7 @@ import Statistics from "./pages/Statistics";
 import UserOverview from "./pages/UserOverview";
 import PrivateRoute from "./components/PrivateRoute";
 import SiteLayout from "./layouts/SiteLayout";
+import UserProfile from "./pages/UserProfile";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route index element={<Homepage />} />
           <Route path="statistics" element={<Statistics />} />
           <Route path="overview" element={<UserOverview />} />
+          <Route path="profile" element={<UserProfile />} />
         </Route>
       </Routes>
     </BrowserRouter>
