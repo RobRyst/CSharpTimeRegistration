@@ -16,10 +16,11 @@ namespace backend.Controllers
         private readonly TokenService TokenService;
         private readonly ILogger _logger;
 
-        public AuthController(UserManager<AppUser> userManager, TokenService jwtTokenService)
+        public AuthController(UserManager<AppUser> userManager, TokenService jwtTokenService, ILogger logger)
         {
             _userManager = userManager;
             TokenService = jwtTokenService;
+            _logger = logger;
         }
 
         [AllowAnonymous]
@@ -30,21 +31,18 @@ namespace backend.Controllers
             {
                 if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
                 {
-                    Console.WriteLine("❌ Email or password is null/empty");
                     return BadRequest("Email and password are required");
                 }
 
                 var user = await _userManager.FindByEmailAsync(loginDto.Email);
                 if (user == null)
                 {
-                    Console.WriteLine($"No user found with email: '{loginDto.Email}'");
-
                     var userByNormalized = await _userManager.Users
                         .FirstOrDefaultAsync(u => u.NormalizedEmail == loginDto.Email.ToUpper());
 
                     if (userByNormalized != null)
                     {
-                        Console.WriteLine($"✅ Found user by normalized email: {userByNormalized.Email}");
+                        Console.WriteLine($"Found user by normalized email: {userByNormalized.Email}");
                         user = userByNormalized;
                     }
                     else

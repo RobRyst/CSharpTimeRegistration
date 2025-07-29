@@ -1,12 +1,34 @@
-import { Calendar } from "@fullcalendar/core/index.js";
 import "./App.css";
 import Homepage from "./pages/HomePage";
+import { Routes, Route, BrowserRouter } from "react-router-dom";
+import UserLogin from "./pages/UserLogin";
+import UserRegistration from "./pages/UserRegistration";
+import Statistics from "./pages/Statistics";
+import UserOverview from "./pages/UserOverview";
+import PrivateRoute from "./components/PrivateRoute";
+import SiteLayout from "./layouts/SiteLayout";
 
 function App() {
   return (
-    <>
-      <Homepage />
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<UserLogin />} />
+        <Route path="/register" element={<UserRegistration />} />
+
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <SiteLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<Homepage />} />
+          <Route path="statistics" element={<Statistics />} />
+          <Route path="overview" element={<UserOverview />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 

@@ -1,12 +1,13 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using backend.Domains.Entities;
 
 public class TimeRegistered
 {
     public int Id { get; set; }
 
-    public string UserId { get; set; } // FK to AppUser
+    public string UserId { get; set; }
 
-    public AppUser User { get; set; } // Navigation
+    public AppUser User { get; set; }
 
     public DateTime Date { get; set; }
 

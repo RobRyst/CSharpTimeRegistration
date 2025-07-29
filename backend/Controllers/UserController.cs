@@ -1,8 +1,10 @@
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
+using backend.Domains.Entities;
 using backend.Domains.Interfaces;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -14,11 +16,13 @@ namespace backend.Controllers
     {
         private readonly ILogger<UserController> _logger;
         private readonly IUserService _userService;
+        private readonly UserManager<AppUser> _userManager;
 
-        public UserController(ILogger<UserController> logger, IUserService userService)
+        public UserController(UserManager<AppUser> userManager, ILogger<UserController> logger, IUserService userService)
         {
             _logger = logger;
             _userService = userService;
+            _userManager = userManager;
         }
 
         [Authorize]
@@ -70,7 +74,7 @@ namespace backend.Controllers
                 return StatusCode(500, "Couldn't Create User");
             }
         }
-        
+
         [Authorize]
         [HttpGet("profile")]
         public IActionResult GetProfile()
