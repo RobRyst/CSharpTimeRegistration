@@ -1,10 +1,10 @@
-import dayGridPlugin from "@fullcalendar/daygrid";
-import FullCalendar from "@fullcalendar/react";
+import Calendar from "../components/Calendar";
 
 const Homepage = () => {
   return (
     <>
-      <FullCalendar plugins={[dayGridPlugin]} initialView="dayGridMonth" />
+      <h1>THIS IS FRONT PAGE</h1>
+      <Calendar />
     </>
   );
 };

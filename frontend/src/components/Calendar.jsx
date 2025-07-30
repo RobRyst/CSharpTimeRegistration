@@ -1,27 +1,92 @@
-import React from "react";
+import React, { useState } from "react";
+import { formatDate } from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import timelinePlugin from "@fullcalendar/timeline";
+import interactionPlugin from "@fullcalendar/interaction";
+import { INITIAL_EVENTS, createEventId } from "./event-utils";
 
-const initialDate = "2021-06-10";
-const events = [
-  {
-    title: "event 1",
-    start: "2021-06-10T01:00:00",
-    end: "2021-06-10T02:00:00",
-  },
-];
+export default function Calendar() {
+  const [currentEvents, setCurrentEvents] = useState([]);
 
-const Calendar = ({ initialView, eventContent }) => (
-  <FullCalendar
-    plugins={[dayGridPlugin, timeGridPlugin, timelinePlugin]}
-    initialView={initialView}
-    initialDate={initialDate}
-    scrollTime={0}
-    events={events}
-    eventContent={eventContent}
-  />
-);
+  function handleDateSelect(selectInfo) {
+    let title = prompt("Enter Title");
+    let calendarApi = selectInfo.view.calendar;
 
-export default Calendar;
+    calendarApi.unselect();
+
+    if (title) {
+      calendarApi.addEvent({
+        id: createEventId(),
+        title,
+        start: selectInfo.startStr,
+        end: selectInfo.endStr,
+        allDay: selectInfo.allDay,
+      });
+    }
+  }
+
+  function handleEventClick(clickInfo) {
+    if (
+      confirm(
+        `Do you want to delete selected Event? '${clickInfo.event.title}'`
+      )
+    ) {
+      clickInfo.event.remove();
+    }
+  }
+
+  function handleEvents(events) {
+    setCurrentEvents(events);
+  }
+
+  return (
+    <div className="demo-app">
+      <Sidebar currentEvents={currentEvents} />
+      <div className="demo-app-main">
+        <FullCalendar
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          headerToolbar={{
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,timeGridDay",
+          }}
+          initialView="dayGridMonth"
+          editable={true}
+          selectable={true}
+          selectMirror={true}
+          dayMaxEvents={true}
+          initialEvents={INITIAL_EVENTS}
+          select={handleDateSelect}
+          eventContent={renderEventContent}
+          eventClick={handleEventClick}
+          eventsSet={handleEvents}
+        />
+      </div>
+    </div>
+  );
+}
+
+function renderEventContent(eventInfo) {
+  return (
+    <>
+      <b>{eventInfo.timeText}</b>
+      <i>{eventInfo.event.title}</i>
+    </>
+  );
+}
+
+function SidebarEvent({ event }) {
+  return (
+    <li key={event.id}>
+      <b>
+        {formatDate(event.start, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })}
+      </b>
+      <i>{event.title}</i>
+    </li>
+  );
+}
