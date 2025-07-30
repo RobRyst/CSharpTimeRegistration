@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using backend.Domains.Entities;
 
-public class TimeRegistered
+public class TimeRegistration
 {
     public int Id { get; set; }
 

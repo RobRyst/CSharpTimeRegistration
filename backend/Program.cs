@@ -25,6 +25,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>()
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<ITimeRegistrationService, TimeRegistrationService>();
 
 // ------------------ JWT Authentication ------------------
 var jwtKey = builder.Configuration["Jwt:Key"];

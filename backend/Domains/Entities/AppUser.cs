@@ -7,7 +7,6 @@ namespace backend.Domains.Entities
     {
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
-
-        public ICollection<TimeRegistered> TimeRegistrations { get; set; } = new List<TimeRegistered>();
+        public ICollection<TimeRegistration> TimeRegistrations { get; set; } = new List<TimeRegistration>();
     }
 }

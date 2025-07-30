@@ -10,5 +10,5 @@ public class ApplicationDbContext : IdentityDbContext<AppUser>
     {
     }
 
-    public DbSet<TimeRegistered> TimeRegistrations { get; set; }
+    public DbSet<TimeRegistration> TimeRegistrations { get; set; }
 }

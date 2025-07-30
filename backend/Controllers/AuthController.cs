@@ -57,11 +57,7 @@ namespace backend.Controllers
                     _logger.LogError("Invalid email or password");
                     return Unauthorized("Invalid email or password");
                 }
-
-                // Get roles
                 var roles = await _userManager.GetRolesAsync(user);
-
-                // Generate token
                 var token = TokenService.CreateToken(user, roles);
                 return Ok(new
                 {

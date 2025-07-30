@@ -1,5 +1,6 @@
 using backend.Domains.Entities;
 using backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,7 +21,8 @@ namespace backend.Controllers
             _timeRegistrationService = timeRegistrationService;
 
         }
-
+        
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllTimeRegistrations()
         {
@@ -36,7 +38,8 @@ namespace backend.Controllers
             }
         }
 
-        [HttpPost]
+        [Authorize]
+        [HttpPost("{id}")]
         public async Task<IActionResult> GetTimeRegistrationById(string id)
         {
             try
