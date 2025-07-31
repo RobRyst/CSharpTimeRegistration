@@ -6,6 +6,6 @@ namespace backend.Domains.Interfaces
     {
         Task<IEnumerable<TimeRegistration>> GetAllTimeRegistrations();
         Task<TimeRegistrationDto?> GetTimeRegistrationById(string id);
-        Task<TimeRegistrationDto?> CreateTimeRegistrationAsync(TimeRegistrationDto dto);
+        Task<TimeRegistrationDto?> CreateTimeRegistrationAsync(CreateTimeRegistrationDto dto, string userId);
     }
 }

@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using backend.Domains.Entities;
+using backend.Domains.Interfaces;
+using backend.Dtos;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,16 +15,18 @@ namespace backend.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly ILogger<TimeRegistrationController> _logger;
-        private readonly TimeRegistrationService _timeRegistrationService;
+        private readonly ITimeRegistrationService _timeRegistrationService;
+        private readonly ApplicationDbContext _context;
 
-        public TimeRegistrationController(ILogger<TimeRegistrationController> logger, UserManager<AppUser> userManager, TimeRegistrationService timeRegistrationService)
+        public TimeRegistrationController(ILogger<TimeRegistrationController> logger, UserManager<AppUser> userManager, ITimeRegistrationService timeRegistrationService, ApplicationDbContext context)
         {
             _userManager = userManager;
             _logger = logger;
             _timeRegistrationService = timeRegistrationService;
+            _context = context;
 
         }
-        
+
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllTimeRegistrations()
@@ -39,7 +44,7 @@ namespace backend.Controllers
         }
 
         [Authorize]
-        [HttpPost("{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetTimeRegistrationById(string id)
         {
             try
@@ -54,6 +59,17 @@ namespace backend.Controllers
                 return StatusCode(500, "Counldn't fetch time registration");
             }
         }
-    }
 
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> CreateTimeRegistration([FromBody] CreateTimeRegistrationDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var result = await _timeRegistrationService.CreateTimeRegistrationAsync(dto, userId);
+            return Ok(result);
+        }
+    }
 }
