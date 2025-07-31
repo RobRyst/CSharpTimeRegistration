@@ -67,5 +67,11 @@ namespace backend.Services
                 Status = entity.Status
             };
         }
+        public async Task<IEnumerable<TimeRegistration>> GetAllTimeRegistrations(string userId)
+        {
+            return await _context.TimeRegistrations
+                                 .Where(tr => tr.UserId == userId)
+                                 .ToListAsync();
+        }
     }
 }

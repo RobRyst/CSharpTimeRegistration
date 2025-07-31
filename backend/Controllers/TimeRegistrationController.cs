@@ -33,13 +33,17 @@ namespace backend.Controllers
         {
             try
             {
-                var timeRegistrations = await _timeRegistrationService.GetAllTimeRegistrations();
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized();
+
+                var timeRegistrations = await _timeRegistrationService.GetAllTimeRegistrations(userId);
                 return Ok(timeRegistrations);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Counldn't fetch all time registrations");
-                return StatusCode(500, "Counldn't fetch all time registrations");
+                _logger.LogError(ex, "Couldn't fetch all time registrations");
+                return StatusCode(500, "Couldn't fetch all time registrations");
             }
         }
 
@@ -67,9 +71,28 @@ namespace backend.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
+            Console.WriteLine("User Identity: " + User.Identity?.Name);
+            Console.WriteLine("User Claims: " + string.Join(", ", User.Claims.Select(c => $"{c.Type}:{c.Value}")));
+            Console.WriteLine("IsAuthenticated: " + User.Identity?.IsAuthenticated);
+            Console.WriteLine("Claims: " + string.Join(", ", User.Claims.Select(c => $"{c.Type} = {c.Value}")));
+
+
 
             var result = await _timeRegistrationService.CreateTimeRegistrationAsync(dto, userId);
             return Ok(result);
+
+        }
+        [Authorize]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTimeRegistration(int id)
+        {
+            var entity = await _context.TimeRegistrations.FindAsync(id);
+            if (entity == null) return NotFound();
+
+            _context.TimeRegistrations.Remove(entity);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }
