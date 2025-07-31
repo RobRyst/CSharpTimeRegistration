@@ -6,53 +6,66 @@ namespace backend.Services
 {
     public class TimeRegistrationService : ITimeRegistrationService
     {
-    private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _context;
 
-    public TimeRegistrationService(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<IEnumerable<TimeRegistration>> GetAllTimeRegistrations()
-    {
-        return await _context.TimeRegistrations.Include(TimeRegistrations => TimeRegistrations.User).ToListAsync();
-    }
-
-    public async Task<TimeRegistrationDto?> GetTimeRegistrationById(string id)
-    {
-        var result = await _context.TimeRegistrations
-            .Include(TimeRegistrations => TimeRegistrations.User)
-            .FirstOrDefaultAsync(TimeRegistrations => TimeRegistrations.Id.ToString() == id);
-
-        if (result == null) return null;
-
-        return new TimeRegistrationDto
+        public TimeRegistrationService(ApplicationDbContext context)
         {
-            Id = result.Id,
-            UserId = result.UserId,
-            Date = result.Date,
-            Hours = result.Hours,
-            Comment = result.Comment,
-            Status = result.Status
-        };
-    }
+            _context = context;
+        }
 
-    public async Task<TimeRegistrationDto?> CreateTimeRegistrationAsync(TimeRegistrationDto dto)
-    {
-        var entity = new TimeRegistration
+        public async Task<IEnumerable<TimeRegistration>> GetAllTimeRegistrations()
         {
-            UserId = dto.UserId,
-            Date = dto.Date,
-            Hours = dto.Hours,
-            Comment = dto.Comment,
-            Status = dto.Status
-        };
+            return await _context.TimeRegistrations.Include(TimeRegistrations => TimeRegistrations.User).ToListAsync();
+        }
 
-        _context.TimeRegistrations.Add(entity);
-        await _context.SaveChangesAsync();
+        public async Task<TimeRegistrationDto?> GetTimeRegistrationById(string id)
+        {
+            var result = await _context.TimeRegistrations
+                .Include(TimeRegistrations => TimeRegistrations.User)
+                .FirstOrDefaultAsync(TimeRegistrations => TimeRegistrations.Id.ToString() == id);
 
-        dto.Id = entity.Id;
-        return dto;
+            if (result == null) return null;
+
+            return new TimeRegistrationDto
+            {
+                Id = result.Id,
+                UserId = result.UserId,
+                Date = result.Date,
+                StartTime = result.StartTime,
+                EndTime = result.EndTime,
+                Hours = result.Hours,
+                Comment = result.Comment,
+                Status = result.Status
+            };
+        }
+
+        public async Task<TimeRegistrationDto?> CreateTimeRegistrationAsync(CreateTimeRegistrationDto dto, string userId)
+        {
+            var entity = new TimeRegistration
+            {
+                UserId = userId,
+                Date = dto.Date,
+                StartTime = dto.StartTime,
+                EndTime = dto.EndTime,
+                Hours = dto.Hours,
+                Comment = dto.Comment,
+                Status = dto.Status
+            };
+
+            _context.TimeRegistrations.Add(entity);
+            await _context.SaveChangesAsync();
+
+            return new TimeRegistrationDto
+            {
+                Id = entity.Id,
+                UserId = entity.UserId,
+                Date = entity.Date,
+                StartTime = entity.StartTime,
+                EndTime = entity.EndTime,
+                Hours = entity.Hours,
+                Comment = entity.Comment,
+                Status = entity.Status
+            };
+        }
     }
-}
 }
