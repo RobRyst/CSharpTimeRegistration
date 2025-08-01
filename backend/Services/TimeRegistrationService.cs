@@ -67,11 +67,51 @@ namespace backend.Services
                 Status = entity.Status
             };
         }
-        public async Task<IEnumerable<TimeRegistration>> GetAllTimeRegistrations(string userId)
+
+        public async Task<IEnumerable<TimeRegistrationDto>> GetAllTimeRegistrations(string userId)
         {
-            return await _context.TimeRegistrations
-                                 .Where(tr => tr.UserId == userId)
-                                 .ToListAsync();
+            var records = await _context.TimeRegistrations
+                                        .Where(tr => tr.UserId == userId)
+                                        .ToListAsync();
+
+            return records.Select(timeRegistration => new TimeRegistrationDto
+            {
+                Id = timeRegistration.Id,
+                UserId = timeRegistration.UserId,
+                Date = timeRegistration.Date,
+                StartTime = timeRegistration.StartTime,
+                EndTime = timeRegistration.EndTime,
+                Hours = timeRegistration.Hours,
+                Comment = timeRegistration.Comment,
+                Status = timeRegistration.Status
+            });
+        }
+
+        public async Task<IEnumerable<TimeRegistrationDto>> GetAllTimeRegistrationDtos()
+        {
+            var registrations = await _context.TimeRegistrations.ToListAsync();
+
+            return registrations.Select(timeRegistration => new TimeRegistrationDto
+            {
+                Id = timeRegistration.Id,
+                UserId = timeRegistration.UserId,
+                Date = timeRegistration.Date,
+                StartTime = timeRegistration.StartTime,
+                EndTime = timeRegistration.EndTime,
+                Hours = timeRegistration.Hours,
+                Comment = timeRegistration.Comment,
+                Status = timeRegistration.Status
+            });
+        }
+
+        public async Task<bool> DeleteTimeRegistrationAsync(int id)
+        {
+            var entity = await _context.TimeRegistrations.FindAsync(id);
+            if (entity == null) return false;
+
+            _context.TimeRegistrations.Remove(entity);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }
