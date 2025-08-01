@@ -13,6 +13,7 @@ import {
 
 const Calendar = () => {
   const [events, setEvents] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -55,7 +56,7 @@ const Calendar = () => {
       }
     };
 
-    fetchEvents(); // <-- 👈 THIS was missing
+    fetchEvents();
   }, []);
 
   /*
@@ -85,7 +86,7 @@ const Calendar = () => {
     calendarApi.unselect();
 
     const { value: formValues } = await Swal.fire({
-      title: "Create Time Entry",
+      title: "Create Event",
       html: `
         <div style="text-align: left">
           <label for="swal-title">Title</label>
@@ -146,7 +147,7 @@ const Calendar = () => {
 
     try {
       const token = localStorage.getItem("token");
-      console.log("Using token:", token);
+      //console.log("Using token:", token);
 
       await axios.post(
         "http://localhost:5196/TimeRegistration",
@@ -192,7 +193,7 @@ const Calendar = () => {
       eventTimeFormat={{
         hour: "2-digit",
         minute: "2-digit",
-        hour12: false, // 👈 disables AM/PM, uses 24-hour clock
+        hour12: false,
       }}
       //eventsSet={handleEvents} - Creates infinite loops - Need to find fix
       eventContent={renderEvent}
