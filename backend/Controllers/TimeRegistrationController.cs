@@ -33,6 +33,11 @@ namespace backend.Controllers
         {
             try
             {
+                Console.WriteLine("User authenticated? " + User.Identity?.IsAuthenticated);
+                foreach (var claim in User.Claims)
+                {
+                    Console.WriteLine($"CLAIM: {claim.Type} = {claim.Value}");
+                }
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized();

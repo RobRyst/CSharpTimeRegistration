@@ -6,7 +6,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import Swal from "sweetalert2";
 import axios from "axios";
 import { INITIAL_EVENTS, createEventId } from "./event-utils";
-import { getTimeRegistrations } from "../api/authAPI";
+import { getTimeRegistrations, deleteTimeRegistration } from "../api/authAPI";
 
 const Calendar = () => {
   const [events, setEvents] = useState([]);
@@ -18,20 +18,23 @@ const Calendar = () => {
         const response = await getTimeRegistrations();
         const data = response.data;
 
-        const mappedEvents = data.map((entry) => ({
-          id: entry.id,
-          title: `${entry.comment} (${entry.hours}h)`,
-          start: `${entry.date}T${entry.startTime}`,
-          end: `${entry.date}T${entry.endTime}`,
-          allDay: false,
-        }));
+        const mappedEvents = data.map((entry) => {
+          const dateStr = entry.date.split("T")[0];
+          return {
+            id: entry.id,
+            title: `${entry.comment} (${entry.hours}h)`,
+            start: `${dateStr}T${entry.startTime}`,
+            end: `${dateStr}T${entry.endTime}`,
+            allDay: false,
+          };
+        });
 
         setEvents(mappedEvents);
       } catch (error) {
         console.error("Error fetching events:", error);
       }
     };
-
+    console.log("TOKEN IN LOCAL STORAGE:", localStorage.getItem("token"));
     fetchEvents();
   }, []);
 
@@ -41,9 +44,19 @@ const Calendar = () => {
   };
   */
 
-  const handleDeleteClick = (clickInfo) => {
-    if (confirm("Do you want to delete it?")) {
+  const handleDeleteClick = async (clickInfo) => {
+    const confirmed = confirm("Do you want to delete this task?");
+    if (!confirmed) return;
+
+    const id = clickInfo.event.id;
+
+    try {
+      await deleteTimeRegistration(id);
       clickInfo.event.remove();
+      Swal.fire("Deleted!", "Your task has been removed.", "success");
+    } catch (err) {
+      console.error("Failed to delete:", err);
+      Swal.fire("Error", "Could not delete time entry", "error");
     }
   };
 
@@ -87,7 +100,6 @@ const Calendar = () => {
 
         const [startHour, startMinute] = startTimeRaw.split(":").map(Number);
         const [endHour, endMinute] = endTimeRaw.split(":").map(Number);
-
         const startMinutes = startHour * 60 + startMinute;
         const endMinutes = endHour * 60 + endMinute;
         const durationMinutes = endMinutes - startMinutes;
@@ -157,7 +169,7 @@ const Calendar = () => {
       dayMaxEvents={true}
       initialView="dayGridMonth"
       events={events}
-      //eventsSet={handleEvents}
+      //eventsSet={handleEvents} - Creates infinite loops - Need to find fix
       eventContent={renderEvent}
       eventClick={handleDeleteClick}
       select={handleSelectedDate}
