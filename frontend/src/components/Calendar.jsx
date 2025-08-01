@@ -189,6 +189,11 @@ const Calendar = () => {
       dayMaxEvents={true}
       initialView="dayGridMonth"
       events={events}
+      eventTimeFormat={{
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false, // 👈 disables AM/PM, uses 24-hour clock
+      }}
       //eventsSet={handleEvents} - Creates infinite loops - Need to find fix
       eventContent={renderEvent}
       eventClick={handleDeleteClick}

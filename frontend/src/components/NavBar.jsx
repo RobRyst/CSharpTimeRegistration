@@ -1,4 +1,5 @@
 import { NavLink } from "react-router";
+import LogoutBtn from "./Logoutbtn";
 
 const NavBar = () => {
   return (
@@ -23,6 +24,7 @@ const NavBar = () => {
             <NavLink to="/profile" className="text-white">
               Profile
             </NavLink>
+            <LogoutBtn />
           </nav>
         </div>
       </div>
