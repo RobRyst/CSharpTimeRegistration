@@ -6,7 +6,10 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import Swal from "sweetalert2";
 import axios from "axios";
 import { INITIAL_EVENTS, createEventId } from "./event-utils";
-import { getTimeRegistrations, deleteTimeRegistration } from "../api/authAPI";
+import {
+  GetTimeRegistrationsForUser,
+  deleteTimeRegistration,
+} from "../api/authAPI";
 
 const Calendar = () => {
   const [events, setEvents] = useState([]);
@@ -15,7 +18,24 @@ const Calendar = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await getTimeRegistrations();
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Missing token");
+
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const roles =
+          payload[
+            "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+          ];
+        const isAdmin = Array.isArray(roles)
+          ? roles.includes("Admin")
+          : roles === "Admin";
+
+        const response = isAdmin
+          ? await axios.get("http://localhost:5196/TimeRegistration/all", {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          : await GetTimeRegistrationsForUser();
+
         const data = response.data;
 
         const mappedEvents = data.map((entry) => {
@@ -34,8 +54,8 @@ const Calendar = () => {
         console.error("Error fetching events:", error);
       }
     };
-    console.log("TOKEN IN LOCAL STORAGE:", localStorage.getItem("token"));
-    fetchEvents();
+
+    fetchEvents(); // <-- 👈 THIS was missing
   }, []);
 
   /*

@@ -12,7 +12,7 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-export const getTimeRegistrations = () => API.get("/TimeRegistration");
+export const GetTimeRegistrationsForUser = () => API.get("/TimeRegistration");
 export const getAllTimeRegistrations = () => API.get("/TimeRegistration/all");
 export const userLogin = (credentials) => API.post("/Auth/login", credentials);
 export const userRegistration = (data) => API.post("/Auth/register", data);

@@ -35,6 +35,27 @@ namespace backend.Controllers
         }
 
         [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetTimeRegistrationsForUser()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized();
+
+                var dtos = await _timeRegistrationService.GetAllTimeRegistrations(userId);
+                return Ok(dtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Couldn't find the time registration you were looking for");
+                return StatusCode(500, "Couldn't fetch time registration");
+            }
+
+        }
+
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTimeRegistrationById(string id)
         {
@@ -51,18 +72,6 @@ namespace backend.Controllers
                 _logger.LogError(ex, "Couldn't find the time registration you were looking for");
                 return StatusCode(500, "Couldn't fetch time registration");
             }
-        }
-        
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetTimeRegistrationsForCurrentUser()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-
-            var dtos = await _timeRegistrationService.GetAllTimeRegistrations(userId);
-            return Ok(dtos);
         }
 
         [Authorize]

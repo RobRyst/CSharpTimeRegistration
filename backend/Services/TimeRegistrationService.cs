@@ -71,38 +71,47 @@ namespace backend.Services
         public async Task<IEnumerable<TimeRegistrationDto>> GetAllTimeRegistrations(string userId)
         {
             var records = await _context.TimeRegistrations
-                                        .Where(tr => tr.UserId == userId)
-                                        .ToListAsync();
+                .Include(timeRegistrations => timeRegistrations.User)
+                .Where(timeRegistrations => timeRegistrations.UserId == userId)
+                .ToListAsync();
 
-            return records.Select(timeRegistration => new TimeRegistrationDto
+            return records.Select(timeRegistrations => new TimeRegistrationDto
             {
-                Id = timeRegistration.Id,
-                UserId = timeRegistration.UserId,
-                Date = timeRegistration.Date,
-                StartTime = timeRegistration.StartTime,
-                EndTime = timeRegistration.EndTime,
-                Hours = timeRegistration.Hours,
-                Comment = timeRegistration.Comment,
-                Status = timeRegistration.Status
+                Id = timeRegistrations.Id,
+                UserId = timeRegistrations.UserId,
+                Date = timeRegistrations.Date,
+                StartTime = timeRegistrations.StartTime,
+                EndTime = timeRegistrations.EndTime,
+                Hours = timeRegistrations.Hours,
+                Comment = timeRegistrations.Comment,
+                Status = timeRegistrations.Status,
+                FirstName = timeRegistrations.User?.FirstName,
+                LastName = timeRegistrations.User?.LastName
             });
         }
+
 
         public async Task<IEnumerable<TimeRegistrationDto>> GetAllTimeRegistrationDtos()
         {
-            var registrations = await _context.TimeRegistrations.ToListAsync();
+            var registrations = await _context.TimeRegistrations
+                .Include(timeRegistrations => timeRegistrations.User)
+                .ToListAsync();
 
-            return registrations.Select(timeRegistration => new TimeRegistrationDto
+            return registrations.Select(timeRegistrations => new TimeRegistrationDto
             {
-                Id = timeRegistration.Id,
-                UserId = timeRegistration.UserId,
-                Date = timeRegistration.Date,
-                StartTime = timeRegistration.StartTime,
-                EndTime = timeRegistration.EndTime,
-                Hours = timeRegistration.Hours,
-                Comment = timeRegistration.Comment,
-                Status = timeRegistration.Status
+                Id = timeRegistrations.Id,
+                UserId = timeRegistrations.UserId,
+                Date = timeRegistrations.Date,
+                StartTime = timeRegistrations.StartTime,
+                EndTime = timeRegistrations.EndTime,
+                Hours = timeRegistrations.Hours,
+                Comment = timeRegistrations.Comment,
+                Status = timeRegistrations.Status,
+                FirstName = timeRegistrations.User?.FirstName,
+                LastName = timeRegistrations.User?.LastName
             });
         }
+
 
         public async Task<bool> DeleteTimeRegistrationAsync(int id)
         {
