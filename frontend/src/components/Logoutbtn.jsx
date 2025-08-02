@@ -5,9 +5,23 @@ const LogoutBtn = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    Swal.fire("Logged out", "You have been signed out", "success");
-    navigate("/login");
+    Swal.fire({
+      title: "Are you sure you want to logout?",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, Log out! ",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("token");
+        Swal.fire({
+          title: "Logged out!",
+          text: "You're now logged out",
+          icon: "success",
+        });
+        navigate("/login");
+      }
+    });
   };
 
   return (

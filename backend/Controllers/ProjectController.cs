@@ -1,0 +1,69 @@
+using System.Security.Claims;
+using backend.Domains.Entities;
+using backend.Domains.Interfaces;
+using backend.Dtos;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+
+namespace backend.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class ProjectController : ControllerBase
+    {
+        private readonly UserManager<AppUser> _userManager;
+        private readonly IProjectService _projectService;
+        private readonly ILogger<ProjectController> _logger;
+
+        public ProjectController(
+            UserManager<AppUser> userManager, IProjectService projectService, ILogger<ProjectController> logger)
+        {
+            _logger = logger;
+            _projectService = projectService;
+            _userManager = userManager;
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetAllProjects()
+        {
+            var projects = await _projectService.GetAllProjects();
+            return Ok(projects);
+        }
+
+        [Authorize]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProjectsById(string id)
+        {
+            try
+            {
+                var projects = await _projectService.GetProjectsById(id);
+                if (projects == null) return NotFound();
+
+                return Ok(projects);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Couldn't find projexct");
+                return StatusCode(500, "Couldn't find project");
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> CreateProject([FromBody] CreateProjectDto projectDto)
+        {
+            try
+            {
+                var result = await _projectService.CreateProjectAsync(projectDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating project");
+                return StatusCode(500, "Failed to create project");
+            }
+        }
+    }
+}
