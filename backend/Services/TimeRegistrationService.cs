@@ -1,3 +1,4 @@
+using backend.Domains.Entities;
 using backend.Domains.Interfaces;
 using backend.Dtos;
 using Microsoft.EntityFrameworkCore;

@@ -27,6 +27,7 @@ builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<ITimeRegistrationService, TimeRegistrationService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 // ------------------ JWT Authentication ------------------
 var jwtKey = builder.Configuration["Jwt:Key"];
