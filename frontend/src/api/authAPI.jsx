@@ -16,6 +16,8 @@ API.interceptors.request.use((config) => {
 export const GetTimeRegistrationsForUser = () => API.get("/TimeRegistration");
 // eslint-disable-next-line react-refresh/only-export-components
 export const getAllTimeRegistrations = () => API.get("/TimeRegistration/all");
+export const GetAllProjects = () => API.get("/Project/all");
+export const GetProjectsById = () => API.get("/Project");
 export const userLogin = (credentials) => API.post("/Auth/login", credentials);
 export const userRegistration = (data) => API.post("/Auth/register", data);
 export const deleteTimeRegistration = (id) =>

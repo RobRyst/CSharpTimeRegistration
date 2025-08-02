@@ -8,6 +8,7 @@ import UserOverview from "./pages/UserOverview";
 import PrivateRoute from "./components/PrivateRoute";
 import SiteLayout from "./layouts/SiteLayout";
 import UserProfile from "./pages/UserProfile";
+import Projects from "./pages/Projects";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           }
         >
           <Route index element={<Homepage />} />
+          <Route path="projects" element={<Projects />} />
           <Route path="statistics" element={<Statistics />} />
           <Route path="overview" element={<UserOverview />} />
           <Route path="profile" element={<UserProfile />} />
