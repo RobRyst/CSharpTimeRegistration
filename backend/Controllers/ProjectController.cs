@@ -24,12 +24,20 @@ namespace backend.Controllers
             _userManager = userManager;
         }
 
-        [Authorize]
-        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAllProjects()
         {
-            var projects = await _projectService.GetAllProjects();
-            return Ok(projects);
+            try
+            {
+                var projects = await _projectService.GetAllProjects();
+                return Ok(projects);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Couldn't find projexct");
+                return StatusCode(500, "Couldn't find project");
+            }
         }
 
         [Authorize]
