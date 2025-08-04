@@ -26,14 +26,12 @@ const Projects = () => {
         const response = isAdmin
           ? await GetAllProjects()
           : await GetProjectsById();
-
         setRowData(response.data);
       } catch (err) {
         console.error("Failed to fetch time registrations", err);
         Swal.fire("Error", "Could not load data", "error");
       }
     };
-
     fetchData();
   }, []);
 

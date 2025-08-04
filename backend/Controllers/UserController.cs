@@ -58,24 +58,43 @@ namespace backend.Controllers
             }
         }
 
-/*
         [Authorize]
-        [HttpPost("add-users")]
-        public async Task<IActionResult> AddUser([FromBody] CreateUserDto dto)
+        [HttpGet("profilepage")]
+        public async Task<IActionResult> GetProfilePage()
         {
-            try
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
             {
-                var result = await _userService.CreateUserAsync(dto);
-                if (!result.Succeeded) return BadRequest(result.Errors);
-                return Ok("User created successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Couldn't Create User");
-                return StatusCode(500, "Couldn't Create User");
-            }
+                UserId = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Roles = roles
+            });
         }
-*/
+
+
+/*
+                        [Authorize]
+                        [HttpPost("add-users")]
+                        public async Task<IActionResult> AddUser([FromBody] CreateUserDto dto)
+                        {
+                            try
+                            {
+                                var result = await _userService.CreateUserAsync(dto);
+                                if (!result.Succeeded) return BadRequest(result.Errors);
+                                return Ok("User created successfully");
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Couldn't Create User");
+                                return StatusCode(500, "Couldn't Create User");
+                            }
+                        }
+                */
 
         [Authorize]
         [HttpGet("profile")]
