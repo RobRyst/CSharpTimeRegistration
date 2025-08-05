@@ -40,8 +40,14 @@ const Projects = () => {
       { field: "id", headerName: "ID", sortable: true, filter: true },
       { field: "userId", headerName: "User ID", sortable: true, filter: true },
       {
-        field: "Name",
+        field: "firstName",
         headerName: "Name",
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "lastName",
+        headerName: "Last Name",
         sortable: true,
         filter: true,
       },
