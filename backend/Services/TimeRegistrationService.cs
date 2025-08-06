@@ -73,6 +73,7 @@ namespace backend.Services
         {
             var records = await _context.TimeRegistrations
                 .Include(timeRegistrations => timeRegistrations.User)
+                .Include(timeRegistrations => timeRegistrations.Project)
                 .Where(timeRegistrations => timeRegistrations.UserId == userId)
                 .ToListAsync();
 
@@ -87,7 +88,8 @@ namespace backend.Services
                 Comment = timeRegistrations.Comment,
                 Status = timeRegistrations.Status,
                 FirstName = timeRegistrations.User?.FirstName,
-                LastName = timeRegistrations.User?.LastName
+                LastName = timeRegistrations.User?.LastName,
+                ProjectName = timeRegistrations.Project?.Name
             });
         }
 

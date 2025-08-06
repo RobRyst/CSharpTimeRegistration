@@ -35,7 +35,6 @@ const UserOverview = () => {
         Swal.fire("Error", "Could not load data", "error");
       }
     };
-
     fetchData();
   }, []);
 

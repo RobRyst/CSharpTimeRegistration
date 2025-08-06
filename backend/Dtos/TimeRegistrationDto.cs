@@ -12,5 +12,6 @@ namespace backend.Dtos
         public double Hours { get; set; }
         public string? Comment { get; set; }
         public string? Status { get; set; }
+        public string? ProjectName { get; set; }
     }
 }
