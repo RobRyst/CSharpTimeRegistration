@@ -8,7 +8,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { GetAllTimeRegistrations } from "../api/authAPI"; // or correct import
+import { GetAllTimeRegistrations } from "../api/authAPI";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
