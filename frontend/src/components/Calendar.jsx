@@ -9,10 +9,12 @@ import { INITIAL_EVENTS, createEventId } from "./event-utils";
 import {
   GetTimeRegistrationsForUser,
   deleteTimeRegistration,
+  GetAllProjects,
 } from "../api/authAPI";
 
 const Calendar = () => {
   const [events, setEvents] = useState([]);
+  const [projects, setProjects] = useState([]);
   // eslint-disable-next-line no-unused-vars
   const [success, setSuccess] = useState(false);
 
@@ -56,14 +58,18 @@ const Calendar = () => {
       }
     };
 
-    fetchEvents();
-  }, []);
+    const fetchProjects = async () => {
+      try {
+        const res = await GetAllProjects();
+        setProjects(res.data);
+      } catch (err) {
+        console.error("Failed to load projects", err);
+      }
+    };
 
-  /*
-  const handleEvents = (e) => {
-    setEvents(e);
-  };
-  */
+    fetchEvents();
+    fetchProjects();
+  }, []);
 
   const handleDeleteClick = async (clickInfo) => {
     const confirmed = confirm("Do you want to delete this task?");
@@ -102,10 +108,17 @@ const Calendar = () => {
           <input id="swal-endtime" type="time" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
 
           <label for="swal-status">Status</label>
-          <select id="swal-status" style="width: 100%; padding: 8px;">
+          <select id="swal-status" style="width: 100%; padding: 8px; margin-bottom: 10px;">
             <option value="Pending">Pending</option>
             <option value="Accepted">Accepted</option>
             <option value="Denied">Denied</option>
+          </select>
+
+          <label for="swal-project">Project</label>
+          <select id="swal-project" style="width: 100%; padding: 8px;">
+            ${projects
+              .map((p) => `<option value="${p.id}">${p.name}</option>`)
+              .join("")}
           </select>
         </div>
       `,
@@ -139,6 +152,7 @@ const Calendar = () => {
           hours: hours,
           comment: document.getElementById("swal-comment").value,
           status: document.getElementById("swal-status").value,
+          projectId: parseInt(document.getElementById("swal-project").value),
         };
       },
     });
@@ -147,7 +161,6 @@ const Calendar = () => {
 
     try {
       const token = localStorage.getItem("token");
-      //console.log("Using token:", token);
 
       await axios.post(
         "http://localhost:5196/TimeRegistration",
@@ -158,6 +171,7 @@ const Calendar = () => {
           hours: formValues.hours,
           comment: formValues.comment,
           status: formValues.status,
+          projectId: formValues.projectId,
         },
         {
           headers: {
@@ -182,6 +196,15 @@ const Calendar = () => {
     }
   };
 
+  function renderEvent(eventContent) {
+    return (
+      <>
+        <p>{eventContent.timeText}</p>
+        <p>{eventContent.event.title}</p>
+      </>
+    );
+  }
+
   return (
     <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -195,21 +218,11 @@ const Calendar = () => {
         minute: "2-digit",
         hour12: false,
       }}
-      //eventsSet={handleEvents} - Creates infinite loops - Need to find fix
       eventContent={renderEvent}
       eventClick={handleDeleteClick}
       select={handleSelectedDate}
     />
   );
-
-  function renderEvent(eventContent) {
-    return (
-      <>
-        <p>{eventContent.timeText}</p>
-        <p>{eventContent.event.title}</p>
-      </>
-    );
-  }
 };
 
 export default Calendar;

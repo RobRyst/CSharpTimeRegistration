@@ -93,7 +93,8 @@ namespace backend.Controllers
                 Email = dto.Email,
                 UserName = dto.Email,
                 FirstName = dto.FirstName,
-                LastName = dto.LastName
+                LastName = dto.LastName,
+                ProjectId = dto.ProjectId
             };
 
             var result = await _userManager.CreateAsync(user, dto.Password);

@@ -54,12 +54,24 @@ const UserOverview = () => {
         sortable: true,
         filter: true,
       },
+      {
+        field: "projectName",
+        headerName: "Project",
+        sortable: true,
+        filter: true,
+      },
       { field: "date", headerName: "Date", sortable: true, filter: true },
       { field: "startTime", headerName: "Start Time", sortable: true },
       { field: "endTime", headerName: "End Time", sortable: true },
       { field: "hours", headerName: "Hours", sortable: true },
       { field: "comment", headerName: "Comment", sortable: true },
-      { field: "status", headerName: "Status", sortable: true, filter: true },
+      {
+        field: "status",
+        headerName: "Status",
+        sortable: true,
+        filter: true,
+        editable: true,
+      },
     ];
   }, []);
 

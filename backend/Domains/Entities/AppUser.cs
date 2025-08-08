@@ -7,6 +7,7 @@ namespace backend.Domains.Entities
     {
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
+        public int? ProjectId { get; set; }
         public ICollection<TimeRegistration> TimeRegistrations { get; set; } = new List<TimeRegistration>();
     }
 }

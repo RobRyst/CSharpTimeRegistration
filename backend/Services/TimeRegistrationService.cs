@@ -50,7 +50,8 @@ namespace backend.Services
                 EndTime = dto.EndTime,
                 Hours = dto.Hours,
                 Comment = dto.Comment,
-                Status = dto.Status
+                Status = dto.Status,
+                ProjectId = dto.ProjectId
             };
 
             _context.TimeRegistrations.Add(entity);
@@ -98,6 +99,7 @@ namespace backend.Services
         {
             var registrations = await _context.TimeRegistrations
                 .Include(timeRegistrations => timeRegistrations.User)
+                .Include(TimeRegistrations => TimeRegistrations.Project)
                 .ToListAsync();
 
             return registrations.Select(timeRegistrations => new TimeRegistrationDto
@@ -111,7 +113,8 @@ namespace backend.Services
                 Comment = timeRegistrations.Comment,
                 Status = timeRegistrations.Status,
                 FirstName = timeRegistrations.User?.FirstName,
-                LastName = timeRegistrations.User?.LastName
+                LastName = timeRegistrations.User?.LastName,
+                ProjectName = timeRegistrations.Project?.Name
             });
         }
 

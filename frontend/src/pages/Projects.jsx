@@ -38,25 +38,24 @@ const Projects = () => {
   const columnDefs = useMemo(() => {
     return [
       { field: "id", headerName: "ID", sortable: true, filter: true },
-      { field: "userId", headerName: "User ID", sortable: true, filter: true },
       {
-        field: "firstName",
-        headerName: "Name",
+        field: "name",
+        headerName: "Project Name",
         sortable: true,
         filter: true,
       },
       {
-        field: "lastName",
-        headerName: "Last Name",
+        field: "description",
+        headerName: "Description",
         sortable: true,
         filter: true,
       },
-      { field: "date", headerName: "Date", sortable: true, filter: true },
-      { field: "startTime", headerName: "Start Time", sortable: true },
-      { field: "endTime", headerName: "End Time", sortable: true },
-      { field: "hours", headerName: "Hours", sortable: true },
-      { field: "comment", headerName: "Comment", sortable: true },
-      { field: "status", headerName: "Status", sortable: true, filter: true },
+      {
+        field: "status",
+        headerName: "Status",
+        sortable: true,
+        filter: true,
+      },
     ];
   }, []);
 
