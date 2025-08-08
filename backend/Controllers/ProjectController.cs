@@ -24,7 +24,7 @@ namespace backend.Controllers
             _userManager = userManager;
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [HttpGet("all")]
         public async Task<IActionResult> GetAllProjects()
         {

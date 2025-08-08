@@ -61,6 +61,7 @@ const Calendar = () => {
     const fetchProjects = async () => {
       try {
         const res = await GetAllProjects();
+        console.log("Fetched Projects:", res.data);
         setProjects(res.data);
       } catch (err) {
         console.error("Failed to load projects", err);
@@ -88,6 +89,25 @@ const Calendar = () => {
   };
 
   const handleSelectedDate = async (selectInfo) => {
+    const selectedDate = new Date(selectInfo.startStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const minDate = new Date(today);
+    minDate.setDate(minDate.getDate() - 30);
+
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + 30);
+
+    if (selectedDate < minDate || selectedDate > maxDate) {
+      Swal.fire({
+        icon: "warning",
+        title: "Invalid Date",
+        text: `You can only create events within 30 days before or after today.`,
+      });
+      return;
+    }
+
     const calendarApi = selectInfo.view.calendar;
     calendarApi.unselect();
 
