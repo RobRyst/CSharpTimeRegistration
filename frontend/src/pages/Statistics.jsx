@@ -71,9 +71,11 @@ const Statistics = () => {
 
   const usersChartOptions = useMemo(
     () => ({
-      data: usersForProject.map((u) => ({
-        userName: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.userId,
-        totalHours: u.totalHours,
+      data: usersForProject.map((user) => ({
+        userName:
+          `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+          user.userId,
+        totalHours: user.totalHours,
       })),
       series: [
         {
@@ -124,9 +126,10 @@ const Statistics = () => {
             disabled={!selectedProjectId}
           >
             <option value="">All users</option>
-            {usersForProject.map((u) => (
-              <option key={u.userId} value={u.userId}>
-                {`${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.userId}
+            {usersForProject.map((user) => (
+              <option key={user.userId} value={user.userId}>
+                {`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+                  user.userId}
               </option>
             ))}
           </select>
