@@ -141,10 +141,10 @@ const Statistics = () => {
           usersForProject.length ? (
             <AgCharts options={usersChartOptions} />
           ) : (
-            <p className="text-gray-500">No hours yet for this project.</p>
+            <p className="text-zinc-500">No hours yet for this project.</p>
           )
         ) : (
-          <p className="text-gray-500">
+          <p className="text-zinc-500">
             Select a project to view user breakdown.
           </p>
         )}
