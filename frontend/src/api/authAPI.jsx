@@ -22,3 +22,8 @@ export const userLogin = (credentials) => API.post("/Auth/login", credentials);
 export const userRegistration = (data) => API.post("/Auth/register", data);
 export const deleteTimeRegistration = (id) =>
   API.delete(`/TimeRegistration/${id}`);
+export const getProjectTotals = () => API.get("/Statistics/project-hours");
+export const getUserTotalsForProject = (projectId) =>
+  API.get(`/Statistics/project/${projectId}/user-hours`);
+export const getSingleUserProjectHours = (projectId, userId) =>
+  API.get(`/Statistics/project/${projectId}/user/${userId}/hours`);

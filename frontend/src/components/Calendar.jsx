@@ -111,37 +111,50 @@ const Calendar = () => {
     const calendarApi = selectInfo.view.calendar;
     calendarApi.unselect();
 
+    const token = localStorage.getItem("token");
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const roles =
+      payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    const isAdmin = Array.isArray(roles)
+      ? roles.includes("Admin")
+      : roles === "Admin";
+
     const { value: formValues } = await Swal.fire({
       title: "Create Event",
       html: `
-        <div style="text-align: left">
-          <label for="swal-title">Title</label>
-          <input id="swal-title" placeholder="Title" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
+      <div style="text-align: left">
+        <label for="swal-title">Title</label>
+        <input id="swal-title" placeholder="Title" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
 
-          <label for="swal-comment">Comment</label>
-          <input id="swal-comment" placeholder="Comment" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
+        <label for="swal-comment">Comment</label>
+        <input id="swal-comment" placeholder="Comment" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
 
-          <label for="swal-starttime">Start Time</label>
-          <input id="swal-starttime" type="time" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
+        <label for="swal-starttime">Start Time</label>
+        <input id="swal-starttime" type="time" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
 
-          <label for="swal-endtime">End Time</label>
-          <input id="swal-endtime" type="time" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
+        <label for="swal-endtime">End Time</label>
+        <input id="swal-endtime" type="time" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
 
-          <label for="swal-status">Status</label>
-          <select id="swal-status" style="width: 100%; padding: 8px; margin-bottom: 10px;">
-            <option value="Pending">Pending</option>
-            <option value="Accepted">Accepted</option>
-            <option value="Denied">Denied</option>
-          </select>
+        ${
+          isAdmin
+            ? `
+        <label for="swal-status">Status</label>
+        <select id="swal-status" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+          <option value="Pending">Pending</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Denied">Denied</option>
+        </select>`
+            : ""
+        }
 
-          <label for="swal-project">Project</label>
-          <select id="swal-project" style="width: 100%; padding: 8px;">
-            ${projects
-              .map((p) => `<option value="${p.id}">${p.name}</option>`)
-              .join("")}
-          </select>
-        </div>
-      `,
+        <label for="swal-project">Project</label>
+        <select id="swal-project" style="width: 100%; padding: 8px;">
+          ${projects
+            .map((p) => `<option value="${p.id}">${p.name}</option>`)
+            .join("")}
+        </select>
+      </div>
+    `,
       focusConfirm: false,
       preConfirm: () => {
         const startTimeRaw = document.getElementById("swal-starttime").value;
@@ -171,7 +184,9 @@ const Calendar = () => {
           endTime: `${endTimeRaw}:00`,
           hours: hours,
           comment: document.getElementById("swal-comment").value,
-          status: document.getElementById("swal-status").value,
+          status: isAdmin
+            ? document.getElementById("swal-status").value
+            : "Pending", // 👈 default for non-admin
           projectId: parseInt(document.getElementById("swal-project").value),
         };
       },
@@ -180,8 +195,6 @@ const Calendar = () => {
     if (!formValues || !formValues.title) return;
 
     try {
-      const token = localStorage.getItem("token");
-
       await axios.post(
         "http://localhost:5196/TimeRegistration",
         {
