@@ -58,6 +58,24 @@ namespace backend.Services
                 Description = project.Description
             };
         }
+        public async Task<ProjectDto?> UpdateProjectAsync(int id, UpdateProjectDto dto)
+        {
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return null;
+
+            if (!string.IsNullOrWhiteSpace(dto.Name)) project.Name = dto.Name;
+            if (dto.Description != null) project.Description = dto.Description;
+            if (dto.Status != null) project.Status = dto.Status;
+
+            await _context.SaveChangesAsync();
+
+            return new ProjectDto
+            {
+                Id = project.Id,
+                Name = project.Name ?? string.Empty,
+                Description = project.Description
+            };
+        }
 
         public async Task<bool> DeleteProjectById(int id)
         {

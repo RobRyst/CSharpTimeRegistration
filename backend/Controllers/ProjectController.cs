@@ -73,5 +73,39 @@ namespace backend.Controllers
                 return StatusCode(500, "Failed to create project");
             }
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProject(int id, [FromBody] UpdateProjectDto dto)
+        {
+            try
+            {
+                var updated = await _projectService.UpdateProjectAsync(id, dto);
+                if (updated == null) return NotFound();
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating project");
+                return StatusCode(500, "Failed to update project");
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProject(int id)
+        {
+            try
+            {
+                var ok = await _projectService.DeleteProjectById(id);
+                if (!ok) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting project");
+                return StatusCode(500, "Failed to delete project");
+            }
+        }
     }
 }
