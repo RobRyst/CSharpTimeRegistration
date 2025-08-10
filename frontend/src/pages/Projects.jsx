@@ -32,7 +32,6 @@ const Projects = () => {
 
     const fetchData = async () => {
       try {
-        // ✅ everyone uses /Project/all
         const response = await GetAllProjects();
         setRowData(response.data);
       } catch (err) {
@@ -94,12 +93,11 @@ const Projects = () => {
       preConfirm: () => {
         const name = document.getElementById("p-name").value.trim();
         const description = document.getElementById("p-desc").value.trim();
-        // const status = document.getElementById("p-status").value.trim();
         if (!name) {
           Swal.showValidationMessage("Name is required");
           return;
         }
-        return { name, description /*, status: status || null */ };
+        return { name, description };
       },
       confirmButtonText: "Create",
       showCancelButton: true,
@@ -110,7 +108,6 @@ const Projects = () => {
       await createProject({
         name: formValues.name,
         description: formValues.description || null,
-        // include status only if your CreateProjectDto supports it
       });
       await reload();
       Swal.fire("Created", "Project created successfully", "success");
@@ -216,14 +213,11 @@ const Projects = () => {
           </button>
         </div>
       )}
-
-      {/* ✅ AG Grid needs a themed container with an explicit height */}
       <div className="ag-theme-alpine" style={{ height: 600, width: "100%" }}>
         <AgGridReact
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
-          // ✅ new selection API; no column checkboxSelection props needed
           rowSelection={
             isAdmin ? { mode: "single", checkboxes: true } : undefined
           }
