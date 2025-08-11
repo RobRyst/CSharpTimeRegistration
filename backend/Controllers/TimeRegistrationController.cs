@@ -96,5 +96,18 @@ namespace backend.Controllers
 
             return NoContent();
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateTimeStatusDto dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Status))
+                return BadRequest("Status is required");
+
+            var ok = await _timeRegistrationService.UpdateTimeRegistrationStatusAsync(id, dto.Status);
+            if (!ok) return NotFound();
+
+            return NoContent();
+        }
     }
 }

@@ -1,46 +1,91 @@
 import { useEffect, useMemo, useState } from "react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { getAllTimeRegistrations } from "../api/authAPI";
-import { GetTimeRegistrationsForUser } from "../api/authAPI";
+import {
+  getAllTimeRegistrations,
+  GetTimeRegistrationsForUser,
+  updateTimeStatus,
+} from "../api/authAPI";
 import Swal from "sweetalert2";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const UserOverview = () => {
   const [rowData, setRowData] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const load = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("Missing token");
+
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const roles =
+      payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    const admin = Array.isArray(roles)
+      ? roles.includes("Admin")
+      : roles === "Admin";
+    setIsAdmin(admin);
+
+    const response = admin
+      ? await getAllTimeRegistrations()
+      : await GetTimeRegistrationsForUser();
+    setRowData(response.data);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Missing token");
-
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const roles =
-          payload[
-            "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-          ];
-        const isAdmin = Array.isArray(roles)
-          ? roles.includes("Admin")
-          : roles === "Admin";
-
-        const response = isAdmin
-          ? await getAllTimeRegistrations()
-          : await GetTimeRegistrationsForUser();
-
-        setRowData(response.data);
-      } catch (err) {
-        console.error("Failed to fetch time registrations", err);
-        Swal.fire("Error", "Could not load data", "error");
-      }
-    };
-    fetchData();
+    load().catch((err) => {
+      console.error("Failed to fetch time registrations", err);
+      Swal.fire("Error", "Could not load data", "error");
+    });
   }, []);
 
-  const columnDefs = useMemo(() => {
-    return [
-      { field: "id", headerName: "ID", sortable: true, filter: true },
+  const handleUpdateStatus = async (id, status) => {
+    try {
+      await updateTimeStatus(id, status);
+      // optimistic UI
+      setRowData((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status } : r))
+      );
+      Swal.fire("Updated", `Status set to ${status}`, "success");
+    } catch (e) {
+      console.error(e);
+      Swal.fire("Error", "Could not update status", "error");
+    }
+  };
+
+  const StatusCell = (p) => {
+    const status = p.value ?? "Pending";
+    if (!isAdmin) {
+      return <span>{status}</span>;
+    }
+    return (
+      <div className="flex gap-2 items-center">
+        <span className="px-2 py-0.5 rounded bg-zinc-100">{status}</span>
+        <button
+          className="px-2 py-1 rounded text-white bg-emerald-600"
+          onClick={() => handleUpdateStatus(p.data.id, "Accepted")}
+        >
+          Accept
+        </button>
+        <button
+          className="px-2 py-1 rounded text-white bg-rose-600"
+          onClick={() => handleUpdateStatus(p.data.id, "Declined")}
+        >
+          Decline
+        </button>
+      </div>
+    );
+  };
+
+  const columnDefs = useMemo(
+    () => [
+      {
+        field: "id",
+        headerName: "ID",
+        sortable: true,
+        filter: true,
+        maxWidth: 100,
+      },
       { field: "userId", headerName: "User ID", sortable: true, filter: true },
       {
         field: "firstName",
@@ -70,10 +115,11 @@ const UserOverview = () => {
         headerName: "Status",
         sortable: true,
         filter: true,
-        editable: true,
+        cellRenderer: StatusCell, // read-only for users, actions for admin
       },
-    ];
-  }, []);
+    ],
+    [isAdmin]
+  );
 
   return (
     <div className="ag-theme-alpine" style={{ height: 600, width: "100%" }}>
@@ -81,6 +127,13 @@ const UserOverview = () => {
         rowData={rowData}
         columnDefs={columnDefs}
         defaultColDef={{ resizable: true, flex: 1 }}
+        getRowClass={(p) =>
+          p.data?.status === "Declined"
+            ? "bg-red-50"
+            : p.data?.status === "Accepted"
+            ? "bg-green-50"
+            : undefined
+        }
       />
     </div>
   );

@@ -24,3 +24,5 @@ export const getSingleUserProjectHours = (projectId, userId) =>
 export const createProject = (data) => API.post("/Project", data);
 export const updateProject = (id, data) => API.put(`/Project/${id}`, data);
 export const deleteProjectById = (id) => API.delete(`/Project/${id}`);
+export const updateTimeStatus = (id, status) =>
+  API.put(`/TimeRegistration/${id}/status`, { status });
