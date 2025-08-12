@@ -26,3 +26,4 @@ export const updateProject = (id, data) => API.put(`/Project/${id}`, data);
 export const deleteProjectById = (id) => API.delete(`/Project/${id}`);
 export const updateTimeStatus = (id, status) =>
   API.put(`/TimeRegistration/${id}/status`, { status });
+export const GetAvailableProjects = () => API.get("/Project/available");

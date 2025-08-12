@@ -8,44 +8,62 @@ namespace backend.Services
 {
     public class ProjectService : IProjectService
     {
-        private readonly ApplicationDbContext _context;
+        private static readonly HashSet<string> AllowedStatuses =
+            new(StringComparer.OrdinalIgnoreCase) { "Pending", "Ongoing", "Completed", "Cancelled" };
 
-        public ProjectService(ApplicationDbContext context)
-        {
-            _context = context;
-        }
+        private readonly ApplicationDbContext _context;
+        public ProjectService(ApplicationDbContext context) => _context = context;
 
         public async Task<IEnumerable<ProjectDto>> GetAllProjects()
         {
-            var projects = await _context.Projects.ToListAsync();
-            return projects.Select(project => new ProjectDto
+            var projects = await _context.Projects.AsNoTracking().ToListAsync();
+            return projects.Select(p => new ProjectDto
             {
-                Id = project.Id,
-                Name = project.Name,
-                Description = project.Description
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Status = p.Status
+            });
+        }
+
+        // Only projects users can pick — Ongoing
+        public async Task<IEnumerable<ProjectDto>> GetAvailableProjects()
+        {
+            var projects = await _context.Projects
+                .AsNoTracking()
+                .Where(p => p.Status == "Ongoing")
+                .ToListAsync();
+
+            return projects.Select(p => new ProjectDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Status = p.Status
             });
         }
 
         public async Task<ProjectDto?> GetProjectsById(string id)
         {
-            var result = await _context.Projects
-                .FirstOrDefaultAsync(project => project.Id.ToString() == id);
-
-            if (result == null) return null;
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id.ToString() == id);
+            if (project == null) return null;
 
             return new ProjectDto
             {
-                Id = result.Id,
-                Name = result.Name,
-                Description = result.Description
+                Id = project.Id,
+                Name = project.Name,
+                Description = project.Description,
+                Status = project.Status
             };
         }
-        public async Task<ProjectDto?> CreateProjectAsync(CreateProjectDto projectDto)
+
+        public async Task<ProjectDto?> CreateProjectAsync(CreateProjectDto dto)
         {
             var project = new Project
             {
-                Name = projectDto.Name,
-                Description = projectDto.Description
+                Name = dto.Name,
+                Description = dto.Description,
+                Status = "Pending" // default
             };
 
             _context.Projects.Add(project);
@@ -55,9 +73,11 @@ namespace backend.Services
             {
                 Id = project.Id,
                 Name = project.Name,
-                Description = project.Description
+                Description = project.Description,
+                Status = project.Status
             };
         }
+
         public async Task<ProjectDto?> UpdateProjectAsync(int id, UpdateProjectDto dto)
         {
             var project = await _context.Projects.FindAsync(id);
@@ -65,15 +85,23 @@ namespace backend.Services
 
             if (!string.IsNullOrWhiteSpace(dto.Name)) project.Name = dto.Name;
             if (dto.Description != null) project.Description = dto.Description;
-            if (dto.Status != null) project.Status = dto.Status;
+
+            if (!string.IsNullOrWhiteSpace(dto.Status))
+            {
+                if (!AllowedStatuses.Contains(dto.Status))
+                    throw new ArgumentException("Invalid status. Allowed: Pending, Ongoing, Completed, Cancelled.");
+
+                project.Status = dto.Status;
+            }
 
             await _context.SaveChangesAsync();
 
             return new ProjectDto
             {
                 Id = project.Id,
-                Name = project.Name ?? string.Empty,
-                Description = project.Description
+                Name = project.Name,
+                Description = project.Description,
+                Status = project.Status
             };
         }
 
@@ -81,7 +109,6 @@ namespace backend.Services
         {
             var project = await _context.Projects.FindAsync(id);
             if (project == null) return false;
-
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync();
             return true;

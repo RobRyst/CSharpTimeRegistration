@@ -42,6 +42,10 @@ namespace backend.Services
 
         public async Task<TimeRegistrationDto?> CreateTimeRegistrationAsync(CreateTimeRegistrationDto dto, string userId)
         {
+            var project = await _context.Projects.FindAsync(dto.ProjectId);
+            if (project == null || !string.Equals(project.Status, "Ongoing", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("You can only register time on ongoing projects.");
+
             var entity = new TimeRegistration
             {
                 UserId = userId,
@@ -66,7 +70,8 @@ namespace backend.Services
                 EndTime = entity.EndTime,
                 Hours = entity.Hours,
                 Comment = entity.Comment,
-                Status = entity.Status
+                Status = entity.Status,
+                ProjectName = project.Name
             };
         }
 

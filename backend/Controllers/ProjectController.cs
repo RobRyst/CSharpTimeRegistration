@@ -12,100 +12,66 @@ namespace backend.Controllers
     [Route("[controller]")]
     public class ProjectController : ControllerBase
     {
-        private readonly UserManager<AppUser> _userManager;
         private readonly IProjectService _projectService;
         private readonly ILogger<ProjectController> _logger;
 
-        public ProjectController(
-            UserManager<AppUser> userManager, IProjectService projectService, ILogger<ProjectController> logger)
+        public ProjectController(IProjectService projectService, ILogger<ProjectController> logger)
         {
             _logger = logger;
             _projectService = projectService;
-            _userManager = userManager;
         }
 
+        // Users get only Ongoing projects
         [Authorize]
+        [HttpGet("available")]
+        public async Task<IActionResult> GetAvailable()
+        {
+            var projects = await _projectService.GetAvailableProjects();
+            return Ok(projects);
+        }
+
+        // Admins can see everything
+        [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public async Task<IActionResult> GetAllProjects()
         {
-            try
-            {
-                var projects = await _projectService.GetAllProjects();
-                return Ok(projects);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Couldn't find projexct");
-                return StatusCode(500, "Couldn't find project");
-            }
+            var projects = await _projectService.GetAllProjects();
+            return Ok(projects);
         }
 
         [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProjectsById(string id)
         {
-            try
-            {
-                var projects = await _projectService.GetProjectsById(id);
-                if (projects == null) return NotFound();
-
-                return Ok(projects);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Couldn't find projexct");
-                return StatusCode(500, "Couldn't find project");
-            }
+            var project = await _projectService.GetProjectsById(id);
+            if (project == null) return NotFound();
+            return Ok(project);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> CreateProject([FromBody] CreateProjectDto projectDto)
+        public async Task<IActionResult> CreateProject([FromBody] CreateProjectDto dto)
         {
-            try
-            {
-                var result = await _projectService.CreateProjectAsync(projectDto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating project");
-                return StatusCode(500, "Failed to create project");
-            }
+            var result = await _projectService.CreateProjectAsync(dto);
+            return Ok(result);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProject(int id, [FromBody] UpdateProjectDto dto)
         {
-            try
-            {
-                var updated = await _projectService.UpdateProjectAsync(id, dto);
-                if (updated == null) return NotFound();
-                return Ok(updated);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating project");
-                return StatusCode(500, "Failed to update project");
-            }
+            var updated = await _projectService.UpdateProjectAsync(id, dto);
+            if (updated == null) return NotFound();
+            return Ok(updated);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(int id)
         {
-            try
-            {
-                var ok = await _projectService.DeleteProjectById(id);
-                if (!ok) return NotFound();
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting project");
-                return StatusCode(500, "Failed to delete project");
-            }
+            var ok = await _projectService.DeleteProjectById(id);
+            if (!ok) return NotFound();
+            return NoContent();
         }
     }
 }

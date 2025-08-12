@@ -10,6 +10,7 @@ import {
   GetTimeRegistrationsForUser,
   deleteTimeRegistration,
   GetAllProjects,
+  GetAvailableProjects,
 } from "../api/authAPI";
 
 const Calendar = () => {
@@ -60,8 +61,19 @@ const Calendar = () => {
 
     const fetchProjects = async () => {
       try {
-        const res = await GetAllProjects();
-        console.log("Fetched Projects:", res.data);
+        const token = localStorage.getItem("token");
+        const payload = token ? JSON.parse(atob(token.split(".")[1])) : null;
+        const roles =
+          payload?.[
+            "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+          ];
+        const isAdmin = Array.isArray(roles)
+          ? roles.includes("Admin")
+          : roles === "Admin";
+
+        const res = isAdmin
+          ? await GetAllProjects()
+          : await GetAvailableProjects();
         setProjects(res.data);
       } catch (err) {
         console.error("Failed to load projects", err);
