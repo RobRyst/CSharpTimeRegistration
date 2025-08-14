@@ -198,7 +198,7 @@ const Calendar = () => {
           comment: document.getElementById("swal-comment").value,
           status: isAdmin
             ? document.getElementById("swal-status").value
-            : "Pending",
+            : "Sent",
           projectId: parseInt(document.getElementById("swal-project").value),
         };
       },
