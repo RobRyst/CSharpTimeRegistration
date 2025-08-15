@@ -75,22 +75,5 @@ namespace backend.Controllers
             if (!ok) return NotFound();
             return NoContent();
         }
-
-        [Authorize(Roles = "Admin")]
-        [HttpGet("overview.pdf")]
-        public async Task<IActionResult> ExportProjectsOverviewPdf([FromQuery] string? status = null)
-        {
-            var projects = await _projectService.GetAllProjects();
-            if (!string.IsNullOrWhiteSpace(status))
-                projects = projects.Where(p => string.Equals(p.Status, status, StringComparison.OrdinalIgnoreCase));
-
-            var doc = new UserOverviewPDF(projects, 
-                string.IsNullOrWhiteSpace(status) ? "Projects Overview" : $"Projects Overview — {status}");
-
-            var bytes = doc.GeneratePdf();
-            var fileName = $"projects-overview-{(status ?? "all")}-{DateTime.UtcNow:yyyyMMdd-HHmm}.pdf";
-
-            return File(bytes, "application/pdf", fileName);
-        }
     }
 }

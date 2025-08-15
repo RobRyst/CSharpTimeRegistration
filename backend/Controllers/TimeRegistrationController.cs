@@ -2,9 +2,11 @@ using System.Security.Claims;
 using backend.Domains.Entities;
 using backend.Domains.Interfaces;
 using backend.Dtos;
+using backend.PDFs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using QuestPDF.Fluent;
 
 namespace backend.Controllers
 {
@@ -108,6 +110,24 @@ namespace backend.Controllers
             if (!ok) return NotFound();
 
             return NoContent();
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("overview.pdf")]
+        public async Task<IActionResult> ExportOverviewPdf([FromQuery] string? status = null)
+        {
+            var rows = await _timeRegistrationService.GetAllTimeRegistrationDtos();
+
+            if (!string.IsNullOrWhiteSpace(status))
+            rows = rows.Where(r => string.Equals(r.Status, status, StringComparison.OrdinalIgnoreCase));
+            rows = rows.OrderBy(r => r.ProjectName).ThenBy(r => r.Date).ThenBy(r => r.StartTime);
+
+            var title = $"Time Registrations — {(string.IsNullOrWhiteSpace(status) ? "All" : status)}";
+            var doc = new UserOverviewPDF(rows, title);
+            var bytes = doc.GeneratePdf();
+            var fileName = $"time-registrations-overview-{(status ?? "all").ToLowerInvariant()}-{DateTime.UtcNow:yyyyMMdd-HHmm}.pdf";
+
+            return File(bytes, "application/pdf", fileName);
         }
     }
 }

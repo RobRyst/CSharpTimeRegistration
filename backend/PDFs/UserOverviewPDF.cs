@@ -1,90 +1,158 @@
+using System;
 using System.Collections.Generic;
-using backend.Dtos;
+using System.Linq;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using backend.Dtos;
 
 namespace backend.PDFs
 {
-    public class UserOverviewPDF : IDocument
+    public class TimeRegistrationsOverviewDocument : IDocument
     {
-        private readonly IEnumerable<ProjectDto> _projects;
+        private readonly IReadOnlyList<TimeRegistrationDto> _rows;
         private readonly string _title;
 
-        public UserOverviewPDF(IEnumerable<ProjectDto> projects, string title = "Projects Overview")
+        public TimeRegistrationsOverviewDocument(IEnumerable<TimeRegistrationDto> rows, string? title = null)
         {
-            _projects = projects;
-            _title = title;
+            _rows = rows?.ToList() ?? new List<TimeRegistrationDto>();
+            _title = string.IsNullOrWhiteSpace(title) ? "Time Registrations Overview" : title;
         }
 
-        public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
+        public DocumentMetadata GetMetadata() => new()
+        {
+            Title = _title,
+            Author = "Time Registration System",
+            Subject = "Overview of time registrations",
+            Keywords = "time, registrations, overview, projects, users",
+        };
 
         public void Compose(IDocumentContainer container)
         {
+            var totalHours = _rows.Sum(r => r.Hours);
+
             container.Page(page =>
             {
-                page.Margin(36); // 0.5in
+                page.Margin(30);
 
-                page.Header().Row(row =>
+                page.Header().Element(ComposeHeader);
+                page.Content().Element(ComposeContent);
+                page.Footer().AlignCenter().Text(txt =>
                 {
-                    row.RelativeItem().Text(_title).FontSize(20).SemiBold();
-                    row.ConstantItem(200).AlignRight().Text(txt =>
-                    {
-                        txt.Span("Generated: ").SemiBold();
-                        txt.Span($"{System.DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC");
-                    });
+                    txt.Span("Generated ").FontSize(9).FontColor(Colors.Grey.Darken2);
+                    txt.Span($"{DateTime.Now:yyyy-MM-dd HH:mm}").FontSize(9).FontColor(Colors.Grey.Darken2);
+                    txt.Span(" • Page ").FontSize(9).FontColor(Colors.Grey.Darken2);
+                    txt.CurrentPageNumber().FontSize(9).FontColor(Colors.Grey.Darken2);
+                    txt.Span(" / ").FontSize(9).FontColor(Colors.Grey.Darken2);
+                    txt.TotalPages().FontSize(9).FontColor(Colors.Grey.Darken2);
                 });
 
-                page.Content().Element(ComposeTable);
-
-                page.Footer().AlignRight().Text(x =>
+                void ComposeHeader(IContainer header)
                 {
-                    x.Span("Page ");
-                    x.CurrentPageNumber();
-                    x.Span(" / ");
-                    x.TotalPages();
-                });
-            });
-        }
-
-        void ComposeTable(IContainer container)
-        {
-            container.PaddingVertical(10).Table(table =>
-            {
-                table.ColumnsDefinition(c =>
-                {
-                    c.ConstantColumn(45);     // ID
-                    c.RelativeColumn(2);      // Name
-                    c.RelativeColumn(3);      // Description
-                    c.ConstantColumn(85);     // Status
-                });
-
-                // header
-                table.Header(h =>
-                {
-                    h.Cell().Element(HeaderCell).Text("ID");
-                    h.Cell().Element(HeaderCell).Text("Name");
-                    h.Cell().Element(HeaderCell).Text("Description");
-                    h.Cell().Element(HeaderCell).Text("Status");
-                });
-
-                foreach (var p in _projects)
-                {
-                    table.Cell().Element(Cell).Text(p.Id.ToString());
-                    table.Cell().Element(Cell).Text(p.Name);
-                    table.Cell().Element(Cell).Text(string.IsNullOrWhiteSpace(p.Description) ? "-" : p.Description);
-                    table.Cell().Element(Cell).Text(p.Status ?? "Pending");
+                    header
+                        .Row(row =>
+                        {
+                            row.RelativeItem().Column(col =>
+                            {
+                                col.Item().Text(_title).FontSize(18).SemiBold();
+                                col.Item().Text($"Total entries: {_rows.Count}").FontSize(10).FontColor(Colors.Grey.Darken2);
+                                col.Item().Text($"Total hours (raw): {totalHours:0.##}")
+                                          .FontSize(10).FontColor(Colors.Grey.Darken2);
+                            });
+                        })
+                        .PaddingBottom(10)
+                        .BorderBottom(1)
+                        .BorderColor(Colors.Grey.Lighten1);
                 }
 
-                static IContainer HeaderCell(IContainer c) =>
-                    c.DefaultTextStyle(x => x.SemiBold())
-                     .PaddingVertical(6)
-                     .BorderBottom(1)
-                     .BorderColor(Colors.Grey.Darken2);
+                void ComposeContent(IContainer content)
+                {
+                    content
+                        .PaddingTop(10)
+                        .Table(table =>
+                        {
+                            // Columns
+                            table.ColumnsDefinition(c =>
+                            {
+                                c.ConstantColumn(80);   // First Name
+                                c.ConstantColumn(80);   // Last Name
+                                c.RelativeColumn(1.2f); // Project
+                                c.ConstantColumn(80);   // Date
+                                c.ConstantColumn(60);   // Start
+                                c.ConstantColumn(60);   // End
+                                c.ConstantColumn(60);   // Hours
+                                c.RelativeColumn(1.6f); // Comment
+                                c.ConstantColumn(75);   // Status
+                            });
 
-                static IContainer Cell(IContainer c) =>
-                    c.PaddingVertical(4);
+                            // Header
+                            table.Header(h =>
+                            {
+                                h.Cell().Element(HeaderCellStyle).Text("First Name");
+                                h.Cell().Element(HeaderCellStyle).Text("Last Name");
+                                h.Cell().Element(HeaderCellStyle).Text("Project");
+                                h.Cell().Element(HeaderCellStyle).Text("Date");
+                                h.Cell().Element(HeaderCellStyle).Text("Start");
+                                h.Cell().Element(HeaderCellStyle).Text("End");
+                                h.Cell().Element(HeaderCellStyle).AlignRight().Text("Hours");
+                                h.Cell().Element(HeaderCellStyle).Text("Comment");
+                                h.Cell().Element(HeaderCellStyle).Text("Status");
+                            });
+
+                            // Rows
+                            var zebra = false;
+                            foreach (var r in _rows
+                                .OrderBy(x => x.ProjectName)
+                                .ThenBy(x => x.Date)
+                                .ThenBy(x => x.StartTime))
+                            {
+                                var bg = zebra ? Colors.Grey.Lighten5 : Colors.White;
+                                zebra = !zebra;
+
+                                table.Cell().Background(bg).Element(CellPadding).Text(r.FirstName ?? "");
+                                table.Cell().Background(bg).Element(CellPadding).Text(r.LastName ?? "");
+                                table.Cell().Background(bg).Element(CellPadding).Text(r.ProjectName ?? "");
+                                table.Cell().Background(bg).Element(CellPadding).Text(r.Date.ToString("yyyy-MM-dd"));
+                                table.Cell().Background(bg).Element(CellPadding).Text(FormatTime(r.StartTime));
+                                table.Cell().Background(bg).Element(CellPadding).Text(FormatTime(r.EndTime));
+                                table.Cell().Background(bg).Element(CellPadding).AlignRight().Text($"{r.Hours:0.##}");
+                                table.Cell().Background(bg).Element(CellPadding).Text(r.Comment ?? "");
+                                table.Cell().Background(bg).Element(CellPadding).Text(r.Status ?? "Pending");
+                            }
+
+                            // Totals Row
+                            table.Cell().ColumnSpan(6)
+                                .Element(e => e.PaddingTop(8).BorderTop(1).BorderColor(Colors.Grey.Darken1))
+                                .Text("Total").SemiBold();
+
+                            table.Cell()
+                                .AlignRight()
+                                .Element(e => e.PaddingTop(8).BorderTop(1).BorderColor(Colors.Grey.Darken1))
+                                .Text($"{totalHours:0.##}")
+                                .SemiBold();
+
+                            table.Cell().ColumnSpan(2)
+                                .Element(e => e.PaddingTop(8).BorderTop(1).BorderColor(Colors.Grey.Darken1))
+                                .Text(""); // filler
+                        });
+                }
             });
         }
+
+        // ----- Helpers -----
+
+        // 24-hour display for TimeSpan
+        static string FormatTime(TimeSpan ts) => ts.ToString(@"hh\:mm");
+
+        static IContainer CellPadding(IContainer c) =>
+            c.PaddingVertical(4).PaddingHorizontal(6);
+
+        static IContainer HeaderCellStyle(IContainer c) =>
+            c.DefaultTextStyle(x => x.SemiBold())
+             .PaddingVertical(6)
+             .PaddingHorizontal(6)
+             .Background(Colors.Grey.Lighten4)
+             .BorderBottom(1)
+             .BorderColor(Colors.Grey.Darken2);
     }
 }

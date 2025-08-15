@@ -29,7 +29,7 @@ export const updateTimeStatus = (id, status) =>
 export const GetAvailableProjects = () => API.get("/Project/available");
 export const exportProjectsPdf = (status) =>
   API.get(
-    `/Project/overview.pdf${
+    `/TimeRegistration/overview.pdf${
       status ? `?status=${encodeURIComponent(status)}` : ""
     }`,
     {
