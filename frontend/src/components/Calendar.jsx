@@ -4,8 +4,9 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import Swal from "sweetalert2";
+import enGbLocale from "@fullcalendar/core/locales/en-gb";
 import axios from "axios";
-import { INITIAL_EVENTS, createEventId } from "./event-utils";
+import { createEventId } from "./event-utils";
 import {
   GetTimeRegistrationsForUser,
   deleteTimeRegistration,
@@ -142,10 +143,10 @@ const Calendar = () => {
         <input id="swal-comment" placeholder="Comment" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
 
         <label for="swal-starttime">Start Time</label>
-        <input id="swal-starttime" type="time" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
+         <input id="swal-starttime" type="text" placeholder="HH:MM" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
 
         <label for="swal-endtime">End Time</label>
-        <input id="swal-endtime" type="time" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
+        <input id="swal-endtime" type="text"  placeholder="HH:MM" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
 
         ${
           isAdmin
@@ -169,11 +170,13 @@ const Calendar = () => {
     `,
       focusConfirm: false,
       preConfirm: () => {
-        const startTimeRaw = document.getElementById("swal-starttime").value;
-        const endTimeRaw = document.getElementById("swal-endtime").value;
-
-        if (!startTimeRaw || !endTimeRaw) {
-          Swal.showValidationMessage("Both start and end times are required");
+        const startTimeRaw = document
+          .getElementById("swal-starttime")
+          .value.trim();
+        const endTimeRaw = document.getElementById("swal-endtime").value.trim();
+        const re = /^([01]\d|2[0-3]):([0-5]\d)$/;
+        if (!re.test(startTimeRaw) || !re.test(endTimeRaw)) {
+          Swal.showValidationMessage("Times must be in 24-hour format HH:MM");
           return;
         }
 
@@ -194,12 +197,15 @@ const Calendar = () => {
           title: document.getElementById("swal-title").value,
           startTime: `${startTimeRaw}:00`,
           endTime: `${endTimeRaw}:00`,
-          hours: hours,
+          hours,
           comment: document.getElementById("swal-comment").value,
           status: isAdmin
             ? document.getElementById("swal-status").value
             : "Sent",
-          projectId: parseInt(document.getElementById("swal-project").value),
+          projectId: parseInt(
+            document.getElementById("swal-project").value,
+            10
+          ),
         };
       },
     });
@@ -258,7 +264,14 @@ const Calendar = () => {
       dayMaxEvents={true}
       initialView="dayGridMonth"
       events={events}
+      locales={[enGbLocale]}
+      locale="en-gb"
       eventTimeFormat={{
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }}
+      slotLabelFormat={{
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
