@@ -27,3 +27,16 @@ export const deleteProjectById = (id) => API.delete(`/Project/${id}`);
 export const updateTimeStatus = (id, status) =>
   API.put(`/TimeRegistration/${id}/status`, { status });
 export const GetAvailableProjects = () => API.get("/Project/available");
+export const exportProjectsPdf = (status) =>
+  API.get(
+    `/Project/overview.pdf${
+      status ? `?status=${encodeURIComponent(status)}` : ""
+    }`,
+    {
+      responseType: "blob",
+    }
+  );
+export const exportUserHoursPdf = (projectId) =>
+  API.get(`/Statistics/project/${projectId}/user-hours.pdf`, {
+    responseType: "blob",
+  });

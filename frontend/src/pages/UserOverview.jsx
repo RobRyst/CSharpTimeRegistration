@@ -5,6 +5,7 @@ import {
   getAllTimeRegistrations,
   GetTimeRegistrationsForUser,
   updateTimeStatus,
+  exportProjectsPdf,
 } from "../api/authAPI";
 import Swal from "sweetalert2";
 
@@ -42,7 +43,6 @@ const UserOverview = () => {
   const handleUpdateStatus = async (id, status) => {
     try {
       await updateTimeStatus(id, status);
-      // optimistic UI
       setRowData((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status } : r))
       );
@@ -120,9 +120,45 @@ const UserOverview = () => {
     ],
     [isAdmin]
   );
+  const exportPdf = async (status) => {
+    try {
+      const res = await exportProjectsPdf(status);
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `projects-overview-${status || "all"}-${new Date()
+        .toISOString()
+        .slice(0, 16)
+        .replace(/[:T]/g, "-")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      Swal.fire("Error", "Could not export PDF", "error");
+    }
+  };
 
   return (
     <div className="ag-theme-alpine" style={{ height: 600, width: "100%" }}>
+      {isAdmin && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => exportPdf()}
+            className="px-3 py-2 rounded bg-slate-700 text-white"
+          >
+            Export PDF (All)
+          </button>
+          <button
+            onClick={() => exportPdf("Ongoing")}
+            className="px-3 py-2 rounded bg-indigo-600 text-white"
+          >
+            Export PDF (Ongoing)
+          </button>
+        </div>
+      )}
       <AgGridReact
         rowData={rowData}
         columnDefs={columnDefs}
