@@ -5,7 +5,8 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using backend.Dtos;
-
+ 
+ /*
 namespace backend.PDFs
 {
     public class TimeRegistrationsOverviewDocument : IDocument
@@ -71,21 +72,19 @@ namespace backend.PDFs
                         .PaddingTop(10)
                         .Table(table =>
                         {
-                            // Columns
                             table.ColumnsDefinition(c =>
                             {
-                                c.ConstantColumn(80);   // First Name
-                                c.ConstantColumn(80);   // Last Name
-                                c.RelativeColumn(1.2f); // Project
-                                c.ConstantColumn(80);   // Date
-                                c.ConstantColumn(60);   // Start
-                                c.ConstantColumn(60);   // End
-                                c.ConstantColumn(60);   // Hours
-                                c.RelativeColumn(1.6f); // Comment
-                                c.ConstantColumn(75);   // Status
+                                c.ConstantColumn(80);
+                                c.ConstantColumn(80);
+                                c.RelativeColumn(1.2f);
+                                c.ConstantColumn(80);
+                                c.ConstantColumn(60);
+                                c.ConstantColumn(60);
+                                c.ConstantColumn(60);
+                                c.RelativeColumn(1.6f);
+                                c.ConstantColumn(75);
                             });
 
-                            // Header
                             table.Header(h =>
                             {
                                 h.Cell().Element(HeaderCellStyle).Text("First Name");
@@ -99,7 +98,6 @@ namespace backend.PDFs
                                 h.Cell().Element(HeaderCellStyle).Text("Status");
                             });
 
-                            // Rows
                             var zebra = false;
                             foreach (var r in _rows
                                 .OrderBy(x => x.ProjectName)
@@ -120,7 +118,6 @@ namespace backend.PDFs
                                 table.Cell().Background(bg).Element(CellPadding).Text(r.Status ?? "Pending");
                             }
 
-                            // Totals Row
                             table.Cell().ColumnSpan(6)
                                 .Element(e => e.PaddingTop(8).BorderTop(1).BorderColor(Colors.Grey.Darken1))
                                 .Text("Total").SemiBold();
@@ -138,10 +135,6 @@ namespace backend.PDFs
                 }
             });
         }
-
-        // ----- Helpers -----
-
-        // 24-hour display for TimeSpan
         static string FormatTime(TimeSpan ts) => ts.ToString(@"hh\:mm");
 
         static IContainer CellPadding(IContainer c) =>
@@ -156,3 +149,4 @@ namespace backend.PDFs
              .BorderColor(Colors.Grey.Darken2);
     }
 }
+*/
