@@ -5,16 +5,15 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using backend.Dtos;
- 
- /*
+
 namespace backend.PDFs
 {
-    public class TimeRegistrationsOverviewDocument : IDocument
+    public class UserOverviewPDF : IDocument
     {
         private readonly IReadOnlyList<TimeRegistrationDto> _rows;
         private readonly string _title;
 
-        public TimeRegistrationsOverviewDocument(IEnumerable<TimeRegistrationDto> rows, string? title = null)
+        public UserOverviewPDF(IEnumerable<TimeRegistrationDto> rows, string? title = null)
         {
             _rows = rows?.ToList() ?? new List<TimeRegistrationDto>();
             _title = string.IsNullOrWhiteSpace(title) ? "Time Registrations Overview" : title;
@@ -34,55 +33,58 @@ namespace backend.PDFs
 
             container.Page(page =>
             {
-                page.Margin(30);
+                page.Size(PageSizes.A4.Landscape());
+                page.Margin(20);
+                page.DefaultTextStyle(TextStyle.Default.FontSize(9));
 
                 page.Header().Element(ComposeHeader);
                 page.Content().Element(ComposeContent);
                 page.Footer().AlignCenter().Text(txt =>
                 {
-                    txt.Span("Generated ").FontSize(9).FontColor(Colors.Grey.Darken2);
-                    txt.Span($"{DateTime.Now:yyyy-MM-dd HH:mm}").FontSize(9).FontColor(Colors.Grey.Darken2);
-                    txt.Span(" • Page ").FontSize(9).FontColor(Colors.Grey.Darken2);
-                    txt.CurrentPageNumber().FontSize(9).FontColor(Colors.Grey.Darken2);
-                    txt.Span(" / ").FontSize(9).FontColor(Colors.Grey.Darken2);
-                    txt.TotalPages().FontSize(9).FontColor(Colors.Grey.Darken2);
+                    txt.Span("Generated ").FontSize(8).FontColor(Colors.Grey.Darken2);
+                    txt.Span($"{DateTime.Now:yyyy-MM-dd HH:mm}").FontSize(8).FontColor(Colors.Grey.Darken2);
+                    txt.Span(" • Page ").FontSize(8).FontColor(Colors.Grey.Darken2);
+                    txt.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Darken2);
+                    txt.Span(" / ").FontSize(8).FontColor(Colors.Grey.Darken2);
+                    txt.TotalPages().FontSize(8).FontColor(Colors.Grey.Darken2);
                 });
 
                 void ComposeHeader(IContainer header)
                 {
                     header
+                        .PaddingBottom(8)
+                        .BorderBottom(1)
+                        .BorderColor(Colors.Grey.Lighten1)
                         .Row(row =>
                         {
                             row.RelativeItem().Column(col =>
                             {
-                                col.Item().Text(_title).FontSize(18).SemiBold();
-                                col.Item().Text($"Total entries: {_rows.Count}").FontSize(10).FontColor(Colors.Grey.Darken2);
+                                col.Item().Text(_title).FontSize(16).SemiBold();
+                                col.Item().Text($"Total entries: {_rows.Count}")
+                                    .FontSize(9).FontColor(Colors.Grey.Darken2);
                                 col.Item().Text($"Total hours (raw): {totalHours:0.##}")
-                                          .FontSize(10).FontColor(Colors.Grey.Darken2);
+                                    .FontSize(9).FontColor(Colors.Grey.Darken2);
                             });
-                        })
-                        .PaddingBottom(10)
-                        .BorderBottom(1)
-                        .BorderColor(Colors.Grey.Lighten1);
+                        });
                 }
 
                 void ComposeContent(IContainer content)
                 {
                     content
-                        .PaddingTop(10)
+                        .PaddingTop(8)
                         .Table(table =>
                         {
                             table.ColumnsDefinition(c =>
                             {
-                                c.ConstantColumn(80);
-                                c.ConstantColumn(80);
-                                c.RelativeColumn(1.2f);
-                                c.ConstantColumn(80);
-                                c.ConstantColumn(60);
-                                c.ConstantColumn(60);
-                                c.ConstantColumn(60);
-                                c.RelativeColumn(1.6f);
-                                c.ConstantColumn(75);
+                                c.ConstantColumn(70);
+                                c.ConstantColumn(70);
+                                c.RelativeColumn(2);
+                                c.ConstantColumn(70);
+                                c.ConstantColumn(55);
+                                c.ConstantColumn(55);
+                                c.ConstantColumn(55);
+                                c.RelativeColumn(2);
+                                c.ConstantColumn(70);
                             });
 
                             table.Header(h =>
@@ -119,34 +121,34 @@ namespace backend.PDFs
                             }
 
                             table.Cell().ColumnSpan(6)
-                                .Element(e => e.PaddingTop(8).BorderTop(1).BorderColor(Colors.Grey.Darken1))
+                                .Element(e => e.PaddingTop(6).BorderTop(1).BorderColor(Colors.Grey.Darken1))
                                 .Text("Total").SemiBold();
 
                             table.Cell()
                                 .AlignRight()
-                                .Element(e => e.PaddingTop(8).BorderTop(1).BorderColor(Colors.Grey.Darken1))
+                                .Element(e => e.PaddingTop(6).BorderTop(1).BorderColor(Colors.Grey.Darken1))
                                 .Text($"{totalHours:0.##}")
                                 .SemiBold();
 
                             table.Cell().ColumnSpan(2)
-                                .Element(e => e.PaddingTop(8).BorderTop(1).BorderColor(Colors.Grey.Darken1))
-                                .Text(""); // filler
+                                .Element(e => e.PaddingTop(6).BorderTop(1).BorderColor(Colors.Grey.Darken1))
+                                .Text("");
                         });
                 }
             });
         }
+
         static string FormatTime(TimeSpan ts) => ts.ToString(@"hh\:mm");
 
         static IContainer CellPadding(IContainer c) =>
-            c.PaddingVertical(4).PaddingHorizontal(6);
+            c.PaddingVertical(3).PaddingHorizontal(5);
 
         static IContainer HeaderCellStyle(IContainer c) =>
-            c.DefaultTextStyle(x => x.SemiBold())
-             .PaddingVertical(6)
-             .PaddingHorizontal(6)
+            c.DefaultTextStyle(x => x.SemiBold().FontSize(9))
+             .PaddingVertical(4)
+             .PaddingHorizontal(5)
              .Background(Colors.Grey.Lighten4)
              .BorderBottom(1)
              .BorderColor(Colors.Grey.Darken2);
     }
 }
-*/

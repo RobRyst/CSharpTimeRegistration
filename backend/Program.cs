@@ -9,8 +9,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using QuestPDF.Infrastructure; // <-- added
 
 var builder = WebApplication.CreateBuilder(args);
+QuestPDF.Settings.License = LicenseType.Community;
+QuestPDF.Settings.EnableDebugging = builder.Environment.IsDevelopment();
+QuestPDF.Settings.CheckIfAllTextGlyphsAreAvailable = false;
 
 // ------------------ EF Core ------------------
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -22,7 +26,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// ------------------ Dependency Injection ------------------
+// ------------------ DI ------------------
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<TokenService>();
@@ -108,7 +112,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ------------------ Choose Roles ------------------
+// ------------------ Velg roller ------------------
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -122,7 +126,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// ------------------ Middleware ------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
