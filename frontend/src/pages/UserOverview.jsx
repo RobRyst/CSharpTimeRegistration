@@ -289,7 +289,8 @@ const UserOverview = () => {
         cellRenderer: ActionsCell,
         width: 120,
         pinned: "right",
-        suppressMenu: true,
+        suppressHeaderMenuButton: true,
+        suppressHeaderContextMenu: true,
       },
     ];
     return cols;
