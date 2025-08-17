@@ -40,3 +40,5 @@ export const exportUserHoursPdf = (projectId) =>
   API.get(`/Statistics/project/${projectId}/user-hours.pdf`, {
     responseType: "blob",
   });
+export const updateTimeRegistration = (id, data) =>
+  API.put(`/TimeRegistration/${id}`, data);

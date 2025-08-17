@@ -119,7 +119,7 @@ namespace backend.Controllers
             var rows = await _timeRegistrationService.GetAllTimeRegistrationDtos();
 
             if (!string.IsNullOrWhiteSpace(status))
-            rows = rows.Where(r => string.Equals(r.Status, status, StringComparison.OrdinalIgnoreCase));
+                rows = rows.Where(r => string.Equals(r.Status, status, StringComparison.OrdinalIgnoreCase));
             rows = rows.OrderBy(r => r.ProjectName).ThenBy(r => r.Date).ThenBy(r => r.StartTime);
 
             var title = $"Time Registrations — {(string.IsNullOrWhiteSpace(status) ? "All" : status)}";
@@ -128,6 +128,30 @@ namespace backend.Controllers
             var fileName = $"time-registrations-overview-{(status ?? "all").ToLowerInvariant()}-{DateTime.UtcNow:yyyyMMdd-HHmm}.pdf";
 
             return File(bytes, "application/pdf", fileName);
+        }
+        [Authorize]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateTimeRegistration(int id, [FromBody] UpdateTimeRegistrationDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var isAdmin = User.IsInRole("Admin");
+
+            try
+            {
+                var result = await _timeRegistrationService.UpdateTimeRegistrationAsync(id, dto, userId, isAdmin);
+                if (result is null) return NotFound();
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

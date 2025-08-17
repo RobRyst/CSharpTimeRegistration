@@ -186,5 +186,64 @@ namespace backend.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<TimeRegistrationDto?> UpdateTimeRegistrationAsync(
+    int id, UpdateTimeRegistrationDto dto, string userId, bool isAdmin)
+        {
+            var entity = await _context.TimeRegistrations
+                .Include(x => x.Project)
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (entity == null) return null;
+
+            var isOwner = entity.UserId == userId;
+            if (!isAdmin && !isOwner) throw new UnauthorizedAccessException();
+
+            var today = DateTime.UtcNow.Date;
+            var targetDate = dto.Date.Date;
+            var days = Math.Abs((today - targetDate).TotalDays);
+            if (!isAdmin && days > 30) throw new InvalidOperationException("Only entries within ±30 days can be edited.");
+
+            if (dto.ProjectId.HasValue)
+            {
+                var project = await _context.Projects.FindAsync(dto.ProjectId.Value);
+                if (project == null || !string.Equals(project.Status, "Ongoing", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Time can only be registered on ongoing projects.");
+                entity.ProjectId = dto.ProjectId.Value;
+            }
+
+            entity.Date = dto.Date;
+            entity.StartTime = dto.StartTime;
+            entity.EndTime = dto.EndTime;
+
+            var duration = dto.EndTime - dto.StartTime;
+            if (duration <= TimeSpan.Zero) throw new InvalidOperationException("End time must be after start time.");
+            entity.Hours = Math.Round(duration.TotalHours, 2);
+
+            entity.Comment = dto.Comment;
+
+            if (!isAdmin)
+            {
+                entity.Status = "Pending";
+            }
+
+            await _context.SaveChangesAsync();
+
+            return new TimeRegistrationDto
+            {
+                Id = entity.Id,
+                UserId = entity.UserId,
+                Date = entity.Date,
+                StartTime = entity.StartTime,
+                EndTime = entity.EndTime,
+                Hours = entity.Hours,
+                Comment = entity.Comment,
+                Status = entity.Status,
+                FirstName = entity.User?.FirstName,
+                LastName = entity.User?.LastName,
+                ProjectName = entity.Project?.Name
+            };
+        }
     }
 }
