@@ -1,20 +1,18 @@
-FROM node:20-alpine AS build
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 COPY . .
+RUN dotnet restore
+RUN dotnet publish -c Release -o /out
 
-ARG VITE_API_BASE
-ENV VITE_API_BASE=${VITE_API_BASE}
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
-RUN npm run build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libfontconfig1 libfreetype6 libharfbuzz0b libpng16-16 \
+  && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /app
+COPY --from=build /out ./
 
-FROM nginx:alpine
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+ENV ASPNETCORE_URLS=http://+:5196
+EXPOSE 5196
+ENTRYPOINT ["dotnet", "backend.dll"]
