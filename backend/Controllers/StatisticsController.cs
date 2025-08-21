@@ -16,10 +16,6 @@ namespace backend.Controllers
             _service = service;
         }
 
-        [HttpGet("project-hours")]
-        public async Task<IActionResult> GetProjectTotals()
-            => Ok(await _service.GetTotalHoursPerProjectAsync());
-
         [HttpGet("project/{projectId:int}/user-hours")]
         public async Task<IActionResult> GetUserTotalsForProject([FromRoute] int projectId)
             => Ok(await _service.GetHoursPerUserForProjectAsync(projectId));
@@ -27,5 +23,18 @@ namespace backend.Controllers
         [HttpGet("project/{projectId:int}/user/{userId}/hours")]
         public async Task<IActionResult> GetSingleUserProjectHours([FromRoute] int projectId, [FromRoute] string userId)
             => Ok(await _service.GetHoursForUserOnProjectAsync(projectId, userId));
+
+        [HttpGet("project-hours")]
+        public async Task<IActionResult> GetProjectTotals([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+            => Ok(await _service.GetTotalHoursPerProjectAsync(from, to));
+
+        [HttpGet("project-hours/monthly")]
+        public async Task<IActionResult> GetProjectTotalsMonthly([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+            => Ok(await _service.GetMonthlyHoursPerProjectAsync(from, to));
+
+        [HttpGet("project-hours/weekly")]
+        public async Task<IActionResult> GetProjectTotalsWeekly([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+            => Ok(await _service.GetWeeklyHoursPerProjectAsync(from, to));
+        
     }
 }

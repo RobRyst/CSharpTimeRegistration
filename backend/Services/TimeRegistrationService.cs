@@ -16,14 +16,18 @@ namespace backend.Services
 
         public async Task<IEnumerable<TimeRegistration>> GetAllTimeRegistrations()
         {
-            return await _context.TimeRegistrations.Include(TimeRegistrations => TimeRegistrations.User).ToListAsync();
+            return await _context.TimeRegistrations
+                .Include(tr => tr.User)
+                .AsNoTracking()
+                .ToListAsync();
         }
 
         public async Task<TimeRegistrationDto?> GetTimeRegistrationById(string id)
         {
             var result = await _context.TimeRegistrations
-                .Include(TimeRegistrations => TimeRegistrations.User)
-                .FirstOrDefaultAsync(TimeRegistrations => TimeRegistrations.Id.ToString() == id);
+                .Include(tr => tr.User)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(tr => tr.Id.ToString() == id);
 
             if (result == null) return null;
 
@@ -41,7 +45,7 @@ namespace backend.Services
         }
 
         public async Task<TimeRegistrationDto?> CreateTimeRegistrationAsync(
-    CreateTimeRegistrationDto dto, string userId, bool isAdmin)
+            CreateTimeRegistrationDto dto, string userId, bool isAdmin)
         {
             var project = await _context.Projects.FindAsync(dto.ProjectId);
             if (project == null)
@@ -66,7 +70,7 @@ namespace backend.Services
             {
                 UserId = userId,
                 ProjectId = dto.ProjectId,
-                Date = dto.Date,
+                Date = dto.Date, // or dto.Date.Date to normalize
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
                 Hours = Math.Round(duration.TotalHours, 2),
@@ -74,7 +78,6 @@ namespace backend.Services
                 Status = isAdmin
                     ? (string.IsNullOrWhiteSpace(dto.Status) ? "Pending" : dto.Status)
                     : "Pending"
-
             };
 
             _context.TimeRegistrations.Add(entity);
@@ -94,79 +97,62 @@ namespace backend.Services
             };
         }
 
-
         public async Task<IEnumerable<TimeRegistrationDto>> GetAllTimeRegistrations(string userId)
         {
             var records = await _context.TimeRegistrations
-                .Include(timeRegistrations => timeRegistrations.User)
-                .Include(timeRegistrations => timeRegistrations.Project)
-                .Where(timeRegistrations => timeRegistrations.UserId == userId)
+                .Include(tr => tr.User)
+                .Include(tr => tr.Project)
+                .Where(tr => tr.UserId == userId)
+                .AsNoTracking()
                 .ToListAsync();
 
-            return records.Select(timeRegistrations => new TimeRegistrationDto
+            return records.Select(tr => new TimeRegistrationDto
             {
-                Id = timeRegistrations.Id,
-                UserId = timeRegistrations.UserId,
-                Date = timeRegistrations.Date,
-                StartTime = timeRegistrations.StartTime,
-                EndTime = timeRegistrations.EndTime,
-                Hours = timeRegistrations.Hours,
-                Comment = timeRegistrations.Comment,
-                Status = timeRegistrations.Status,
-                FirstName = timeRegistrations.User?.FirstName,
-                LastName = timeRegistrations.User?.LastName,
-                ProjectName = timeRegistrations.Project?.Name
+                Id = tr.Id,
+                UserId = tr.UserId,
+                Date = tr.Date,
+                StartTime = tr.StartTime,
+                EndTime = tr.EndTime,
+                Hours = tr.Hours,
+                Comment = tr.Comment,
+                Status = tr.Status,
+                FirstName = tr.User?.FirstName,
+                LastName = tr.User?.LastName,
+                ProjectName = tr.Project?.Name
             });
         }
-
 
         public async Task<IEnumerable<TimeRegistrationDto>> GetAllTimeRegistrationDtos()
         {
             var registrations = await _context.TimeRegistrations
-                .Include(timeRegistrations => timeRegistrations.User)
-                .Include(TimeRegistrations => TimeRegistrations.Project)
+                .Include(tr => tr.User)
+                .Include(tr => tr.Project)
+                .AsNoTracking()
                 .ToListAsync();
 
-            return registrations.Select(timeRegistrations => new TimeRegistrationDto
+            return registrations.Select(tr => new TimeRegistrationDto
             {
-                Id = timeRegistrations.Id,
-                UserId = timeRegistrations.UserId,
-                Date = timeRegistrations.Date,
-                StartTime = timeRegistrations.StartTime,
-                EndTime = timeRegistrations.EndTime,
-                Hours = timeRegistrations.Hours,
-                Comment = timeRegistrations.Comment,
-                Status = timeRegistrations.Status,
-                FirstName = timeRegistrations.User?.FirstName,
-                LastName = timeRegistrations.User?.LastName,
-                ProjectName = timeRegistrations.Project?.Name
+                Id = tr.Id,
+                UserId = tr.UserId,
+                Date = tr.Date,
+                StartTime = tr.StartTime,
+                EndTime = tr.EndTime,
+                Hours = tr.Hours,
+                Comment = tr.Comment,
+                Status = tr.Status,
+                FirstName = tr.User?.FirstName,
+                LastName = tr.User?.LastName,
+                ProjectName = tr.Project?.Name
             });
         }
-
-        public async Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(CancellationToken ct = default)
-        {
-            return await _context.TimeRegistrations
-                .Include(timeRegistrations => timeRegistrations.Project)
-                .Where(timeRegistrations => timeRegistrations.ProjectId != null && timeRegistrations.Status == "Accepted")
-                .GroupBy(timeRegistrations => new { timeRegistrations.ProjectId, timeRegistrations.Project!.Name })
-                .Select(g => new ProjectHoursDto
-                {
-                    ProjectId = g.Key.ProjectId!.Value,
-                    ProjectName = g.Key.Name,
-                    TotalHours = g.Sum(x => x.Hours)
-                })
-                .OrderByDescending(x => x.TotalHours)
-                .ToListAsync(ct);
-        }
-
 
         public async Task<IEnumerable<UserProjectHoursDto>> GetHoursPerUserForProjectAsync(int projectId, CancellationToken ct = default)
         {
             return await _context.TimeRegistrations
-                .Include(timeRegistrations => timeRegistrations.User)
-                .Include(timeRegistrations => timeRegistrations.Project)
-                .Where(timeRegistrations => timeRegistrations.ProjectId == projectId && timeRegistrations.Status == "Accepted")
-                .GroupBy(timeRegistrations => new { timeRegistrations.UserId, timeRegistrations.User!.FirstName, timeRegistrations.User!.LastName, timeRegistrations.ProjectId, timeRegistrations.Project!.Name })
+                .Include(tr => tr.User)
+                .Include(tr => tr.Project)
+                .Where(tr => tr.ProjectId == projectId && tr.Status == "Accepted")
+                .GroupBy(tr => new { tr.UserId, tr.User!.FirstName, tr.User!.LastName, tr.ProjectId, tr.Project!.Name })
                 .Select(g => new UserProjectHoursDto
                 {
                     UserId = g.Key.UserId!,
@@ -183,8 +169,8 @@ namespace backend.Services
         public async Task<double> GetHoursForUserOnProjectAsync(int projectId, string userId, CancellationToken ct = default)
         {
             return await _context.TimeRegistrations
-                .Where(timeRegistrations => timeRegistrations.ProjectId == projectId && timeRegistrations.UserId == userId && timeRegistrations.Status == "Accepted")  // <-- here
-                .SumAsync(timeRegistrations => timeRegistrations.Hours, ct);
+                .Where(tr => tr.ProjectId == projectId && tr.UserId == userId && tr.Status == "Accepted")
+                .SumAsync(tr => tr.Hours, ct);
         }
 
         public async Task<bool> DeleteTimeRegistrationAsync(int id)
@@ -202,13 +188,13 @@ namespace backend.Services
             var entity = await _context.TimeRegistrations.FindAsync(id);
             if (entity == null) return false;
 
-            entity.Status = status;
+            entity.Status = status; // consider validating Allowed statuses
             await _context.SaveChangesAsync();
             return true;
         }
 
         public async Task<TimeRegistrationDto?> UpdateTimeRegistrationAsync(
-    int id, UpdateTimeRegistrationDto dto, string userId, bool isAdmin)
+            int id, UpdateTimeRegistrationDto dto, string userId, bool isAdmin)
         {
             var entity = await _context.TimeRegistrations
                 .Include(x => x.Project)
@@ -241,7 +227,6 @@ namespace backend.Services
             if (duration <= TimeSpan.Zero) throw new InvalidOperationException("End time must be after start time.");
             entity.Hours = Math.Round(duration.TotalHours, 2);
 
-
             entity.Comment = dto.Comment;
 
             if (!isAdmin)
@@ -266,68 +251,70 @@ namespace backend.Services
                 ProjectName = entity.Project?.Name
             };
         }
+
         public async Task<TimeRegistration?> GetEntityByIdAsync(int id)
         {
             return await _context.TimeRegistrations
                 .Include(x => x.Project)
                 .Include(x => x.User)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
-        
-        // Services/TimeRegistrationService.cs
-public async Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(
-    DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
-{
-    var q = _context.TimeRegistrations
-        .Include(tr => tr.Project)
-        .Where(tr => tr.ProjectId != null && tr.Status == "Accepted");
 
-    if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
-    if (to.HasValue)   q = q.Where(tr => tr.Date <  to.Value.Date.AddDays(1)); // inclusive end
+        // ------------------ Stats (date-filtered) ----------------------
 
-    return await q
-        .GroupBy(tr => new { tr.ProjectId, tr.Project!.Name })
-        .Select(g => new ProjectHoursDto
+        public async Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(
+            DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
         {
-            ProjectId = g.Key.ProjectId!.Value,
-            ProjectName = g.Key.Name,
-            TotalHours = g.Sum(x => x.Hours)
-        })
-        .OrderByDescending(x => x.TotalHours)
-        .ToListAsync(ct);
-}
+            var q = _context.TimeRegistrations
+                .Include(tr => tr.Project)
+                .Where(tr => tr.ProjectId != null && tr.Status == "Accepted");
 
-public async Task<IEnumerable<ProjectHoursMonthlyDto>> GetMonthlyHoursPerProjectAsync(
-    DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
-{
-    var q = _context.TimeRegistrations
-        .Include(tr => tr.Project)
-        .Where(tr => tr.ProjectId != null && tr.Status == "Accepted");
+            if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
+            if (to.HasValue)   q = q.Where(tr => tr.Date <  to.Value.Date.AddDays(1)); // inclusive end
 
-    if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
-    if (to.HasValue)   q = q.Where(tr => tr.Date <  to.Value.Date.AddDays(1));
+            return await q
+                .GroupBy(tr => new { tr.ProjectId, tr.Project!.Name })
+                .Select(g => new ProjectHoursDto
+                {
+                    ProjectId = g.Key.ProjectId!.Value,
+                    ProjectName = g.Key.Name,
+                    TotalHours = g.Sum(x => x.Hours)
+                })
+                .OrderByDescending(x => x.TotalHours)
+                .ToListAsync(ct);
+        }
 
-    // Year/Month grouping translates cleanly to SQL
-    return await q
-        .GroupBy(tr => new
+        public async Task<IEnumerable<ProjectHoursMonthlyDto>> GetMonthlyHoursPerProjectAsync(
+            DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
         {
-            tr.ProjectId,
-            tr.Project!.Name,
-            Year = tr.Date.Year,
-            Month = tr.Date.Month
-        })
-        .Select(g => new ProjectHoursMonthlyDto
-        {
-            ProjectId = g.Key.ProjectId!.Value,
-            ProjectName = g.Key.Name,
-            Year = g.Key.Year,
-            Month = g.Key.Month,
-            TotalHours = g.Sum(x => x.Hours)
-        })
-        .OrderBy(x => x.ProjectName)
-        .ThenBy(x => x.Year).ThenBy(x => x.Month)
-        .ToListAsync(ct);
-}
+            var q = _context.TimeRegistrations
+                .Include(tr => tr.Project)
+                .Where(tr => tr.ProjectId != null && tr.Status == "Accepted");
+
+            if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
+            if (to.HasValue)   q = q.Where(tr => tr.Date <  to.Value.Date.AddDays(1));
+
+            return await q
+                .GroupBy(tr => new
+                {
+                    tr.ProjectId,
+                    tr.Project!.Name,
+                    Year = tr.Date.Year,
+                    Month = tr.Date.Month
+                })
+                .Select(g => new ProjectHoursMonthlyDto
+                {
+                    ProjectId = g.Key.ProjectId!.Value,
+                    ProjectName = g.Key.Name,
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    TotalHours = g.Sum(x => x.Hours)
+                })
+                .OrderBy(x => x.ProjectName)
+                .ThenBy(x => x.Year).ThenBy(x => x.Month)
+                .ToListAsync(ct);
+        }
 
         public async Task<IEnumerable<ProjectHoursWeeklyDto>> GetWeeklyHoursPerProjectAsync(
             DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
@@ -337,9 +324,8 @@ public async Task<IEnumerable<ProjectHoursMonthlyDto>> GetMonthlyHoursPerProject
                 .Where(tr => tr.ProjectId != null && tr.Status == "Accepted");
 
             if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
-            if (to.HasValue) q = q.Where(tr => tr.Date < to.Value.Date.AddDays(1));
+            if (to.HasValue)   q = q.Where(tr => tr.Date <  to.Value.Date.AddDays(1));
 
-            // Many providers don’t translate ISO-week to SQL. Safest: pull filtered rows and group in memory.
             var filtered = await q
                 .Select(tr => new
                 {
@@ -348,13 +334,12 @@ public async Task<IEnumerable<ProjectHoursMonthlyDto>> GetMonthlyHoursPerProject
                     tr.Date,
                     tr.Hours
                 })
+                .AsNoTracking()
                 .ToListAsync(ct);
 
             static DateTime IsoWeekStart(DateTime d)
             {
-                // ISO week starts Monday; DayOfWeek: Sunday=0, Monday=1, ... Saturday=6
                 var day = d.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)d.DayOfWeek;
-                // Move back to Monday
                 var monday = d.Date.AddDays(1 - day);
                 return monday;
             }

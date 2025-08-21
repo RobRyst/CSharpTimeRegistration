@@ -15,7 +15,15 @@ namespace backend.Domains.Interfaces
         Task<TimeRegistration?> GetEntityByIdAsync(int id);
 
         // ------------------ Stats ----------------------
-        Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(CancellationToken ct = default);
+        Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(
+            DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
+
+        Task<IEnumerable<ProjectHoursMonthlyDto>> GetMonthlyHoursPerProjectAsync(
+            DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
+
+        Task<IEnumerable<ProjectHoursWeeklyDto>> GetWeeklyHoursPerProjectAsync(
+            DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
+
         Task<IEnumerable<UserProjectHoursDto>> GetHoursPerUserForProjectAsync(int projectId, CancellationToken ct = default);
         Task<double> GetHoursForUserOnProjectAsync(int projectId, string userId, CancellationToken ct = default);
     }
