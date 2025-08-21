@@ -23,7 +23,6 @@ namespace backend.Controllers
             _projectService = projectService;
         }
 
-        // Users get only Ongoing projects
         [Authorize]
         [HttpGet("available")]
         public async Task<IActionResult> GetAvailable()
@@ -32,7 +31,6 @@ namespace backend.Controllers
             return Ok(projects);
         }
 
-        // Admins can see everything
         [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public async Task<IActionResult> GetAllProjects()

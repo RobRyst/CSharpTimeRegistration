@@ -74,7 +74,7 @@ namespace backend.Services
                 Status = isAdmin
                     ? (string.IsNullOrWhiteSpace(dto.Status) ? "Pending" : dto.Status)
                     : "Pending"
-        
+
             };
 
             _context.TimeRegistrations.Add(entity);
@@ -272,6 +272,105 @@ namespace backend.Services
                 .Include(x => x.Project)
                 .Include(x => x.User)
                 .FirstOrDefaultAsync(x => x.Id == id);
+        }
+        
+        // Services/TimeRegistrationService.cs
+public async Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(
+    DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
+{
+    var q = _context.TimeRegistrations
+        .Include(tr => tr.Project)
+        .Where(tr => tr.ProjectId != null && tr.Status == "Accepted");
+
+    if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
+    if (to.HasValue)   q = q.Where(tr => tr.Date <  to.Value.Date.AddDays(1)); // inclusive end
+
+    return await q
+        .GroupBy(tr => new { tr.ProjectId, tr.Project!.Name })
+        .Select(g => new ProjectHoursDto
+        {
+            ProjectId = g.Key.ProjectId!.Value,
+            ProjectName = g.Key.Name,
+            TotalHours = g.Sum(x => x.Hours)
+        })
+        .OrderByDescending(x => x.TotalHours)
+        .ToListAsync(ct);
+}
+
+public async Task<IEnumerable<ProjectHoursMonthlyDto>> GetMonthlyHoursPerProjectAsync(
+    DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
+{
+    var q = _context.TimeRegistrations
+        .Include(tr => tr.Project)
+        .Where(tr => tr.ProjectId != null && tr.Status == "Accepted");
+
+    if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
+    if (to.HasValue)   q = q.Where(tr => tr.Date <  to.Value.Date.AddDays(1));
+
+    // Year/Month grouping translates cleanly to SQL
+    return await q
+        .GroupBy(tr => new
+        {
+            tr.ProjectId,
+            tr.Project!.Name,
+            Year = tr.Date.Year,
+            Month = tr.Date.Month
+        })
+        .Select(g => new ProjectHoursMonthlyDto
+        {
+            ProjectId = g.Key.ProjectId!.Value,
+            ProjectName = g.Key.Name,
+            Year = g.Key.Year,
+            Month = g.Key.Month,
+            TotalHours = g.Sum(x => x.Hours)
+        })
+        .OrderBy(x => x.ProjectName)
+        .ThenBy(x => x.Year).ThenBy(x => x.Month)
+        .ToListAsync(ct);
+}
+
+        public async Task<IEnumerable<ProjectHoursWeeklyDto>> GetWeeklyHoursPerProjectAsync(
+            DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
+        {
+            var q = _context.TimeRegistrations
+                .Include(tr => tr.Project)
+                .Where(tr => tr.ProjectId != null && tr.Status == "Accepted");
+
+            if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
+            if (to.HasValue) q = q.Where(tr => tr.Date < to.Value.Date.AddDays(1));
+
+            // Many providers don’t translate ISO-week to SQL. Safest: pull filtered rows and group in memory.
+            var filtered = await q
+                .Select(tr => new
+                {
+                    tr.ProjectId,
+                    ProjectName = tr.Project!.Name,
+                    tr.Date,
+                    tr.Hours
+                })
+                .ToListAsync(ct);
+
+            static DateTime IsoWeekStart(DateTime d)
+            {
+                // ISO week starts Monday; DayOfWeek: Sunday=0, Monday=1, ... Saturday=6
+                var day = d.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)d.DayOfWeek;
+                // Move back to Monday
+                var monday = d.Date.AddDays(1 - day);
+                return monday;
+            }
+
+            return filtered
+                .GroupBy(x => new { x.ProjectId, x.ProjectName, WeekStart = IsoWeekStart(x.Date) })
+                .Select(g => new ProjectHoursWeeklyDto
+                {
+                    ProjectId = g.Key.ProjectId!.Value,
+                    ProjectName = g.Key.ProjectName,
+                    WeekStart = g.Key.WeekStart,
+                    TotalHours = g.Sum(x => x.Hours)
+                })
+                .OrderBy(x => x.ProjectName)
+                .ThenBy(x => x.WeekStart)
+                .ToList();
         }
     }
 }

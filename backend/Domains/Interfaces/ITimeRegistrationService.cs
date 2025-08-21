@@ -13,9 +13,7 @@ namespace backend.Domains.Interfaces
         Task<bool> UpdateTimeRegistrationStatusAsync(int id, string status);
         Task<TimeRegistrationDto?> UpdateTimeRegistrationAsync(int id, UpdateTimeRegistrationDto dto, string userId, bool isAdmin);
         Task<TimeRegistration?> GetEntityByIdAsync(int id);
-        
 
-        //Task<TimeRegistrationDto?> UpdateOwnTimeRegistrationAsync(int id, string userId, UpdateTimeRegistrationDto dto);
         // ------------------ Stats ----------------------
         Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(CancellationToken ct = default);
         Task<IEnumerable<UserProjectHoursDto>> GetHoursPerUserForProjectAsync(int projectId, CancellationToken ct = default);
