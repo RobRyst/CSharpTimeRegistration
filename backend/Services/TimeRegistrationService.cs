@@ -40,22 +40,41 @@ namespace backend.Services
             };
         }
 
-        public async Task<TimeRegistrationDto?> CreateTimeRegistrationAsync(CreateTimeRegistrationDto dto, string userId)
+        public async Task<TimeRegistrationDto?> CreateTimeRegistrationAsync(
+    CreateTimeRegistrationDto dto, string userId, bool isAdmin)
         {
             var project = await _context.Projects.FindAsync(dto.ProjectId);
-            if (project == null || !string.Equals(project.Status, "Ongoing", StringComparison.OrdinalIgnoreCase))
+            if (project == null)
+                throw new InvalidOperationException("Project not found.");
+            if (!string.Equals(project.Status, "Ongoing", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("You can only register time on ongoing projects.");
+
+            if (!isAdmin)
+            {
+                var today = DateTime.UtcNow.Date;
+                var target = dto.Date.Date;
+                var days = Math.Abs((today - target).TotalDays);
+                if (days > 30)
+                    throw new InvalidOperationException("Only entries within ±30 days can be created.");
+            }
+
+            var duration = dto.EndTime - dto.StartTime;
+            if (duration <= TimeSpan.Zero)
+                throw new InvalidOperationException("End time must be after start time.");
 
             var entity = new TimeRegistration
             {
                 UserId = userId,
+                ProjectId = dto.ProjectId,
                 Date = dto.Date,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
-                Hours = dto.Hours,
+                Hours = Math.Round(duration.TotalHours, 2),
                 Comment = dto.Comment,
-                Status = dto.Status,
-                ProjectId = dto.ProjectId
+                Status = isAdmin
+                    ? (string.IsNullOrWhiteSpace(dto.Status) ? "Pending" : dto.Status)
+                    : "Pending"
+        
             };
 
             _context.TimeRegistrations.Add(entity);
@@ -74,6 +93,7 @@ namespace backend.Services
                 ProjectName = project.Name
             };
         }
+
 
         public async Task<IEnumerable<TimeRegistrationDto>> GetAllTimeRegistrations(string userId)
         {
@@ -221,6 +241,7 @@ namespace backend.Services
             if (duration <= TimeSpan.Zero) throw new InvalidOperationException("End time must be after start time.");
             entity.Hours = Math.Round(duration.TotalHours, 2);
 
+
             entity.Comment = dto.Comment;
 
             if (!isAdmin)
@@ -244,6 +265,13 @@ namespace backend.Services
                 LastName = entity.User?.LastName,
                 ProjectName = entity.Project?.Name
             };
+        }
+        public async Task<TimeRegistration?> GetEntityByIdAsync(int id)
+        {
+            return await _context.TimeRegistrations
+                .Include(x => x.Project)
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x => x.Id == id);
         }
     }
 }

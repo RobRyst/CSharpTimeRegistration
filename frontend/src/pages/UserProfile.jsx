@@ -26,7 +26,8 @@ const UserProfile = () => {
         const data = timeRes.data;
 
         const grouped = data.reduce((acc, item) => {
-          const projectName = item.project?.name || "Unassigned";
+          const projectName =
+            item.projectName || item.project?.name || "Unassigned";
           if (!acc[projectName]) {
             acc[projectName] = { hours: 0, entries: [] };
           }

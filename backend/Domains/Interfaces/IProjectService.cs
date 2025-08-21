@@ -5,7 +5,7 @@ namespace backend.Domains.Interfaces
     public interface IProjectService
     {
         Task<IEnumerable<ProjectDto>> GetAllProjects();
-        Task<ProjectDto?> GetProjectsById(string id);
+        Task<ProjectDto?> GetProjectsById(int id);
         Task<IEnumerable<ProjectDto>> GetAvailableProjects();
         Task<ProjectDto?> CreateProjectAsync(CreateProjectDto dto);
         Task<ProjectDto?> UpdateProjectAsync(int id, UpdateProjectDto dto);

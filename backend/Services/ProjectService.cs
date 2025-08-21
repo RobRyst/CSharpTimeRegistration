@@ -43,9 +43,12 @@ namespace backend.Services
             });
         }
 
-        public async Task<ProjectDto?> GetProjectsById(string id)
+        public async Task<ProjectDto?> GetProjectsById(int id)
         {
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id.ToString() == id);
+            var project = await _context.Projects
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id);
+
             if (project == null) return null;
 
             return new ProjectDto

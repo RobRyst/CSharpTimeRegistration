@@ -67,6 +67,8 @@ namespace backend.Controllers
                         user.Id,
                         user.Email,
                         user.UserName,
+                        user.FirstName,
+                        user.LastName,
                         roles
                     }
                 });

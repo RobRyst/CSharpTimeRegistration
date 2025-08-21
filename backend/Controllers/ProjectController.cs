@@ -41,13 +41,12 @@ namespace backend.Controllers
             return Ok(projects);
         }
 
-        [Authorize]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetProjectsById(string id)
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetProjectsById(int id)
         {
-            var project = await _projectService.GetProjectsById(id);
-            if (project == null) return NotFound();
-            return Ok(project);
+            var dto = await _projectService.GetProjectsById(id);
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         [Authorize(Roles = "Admin")]

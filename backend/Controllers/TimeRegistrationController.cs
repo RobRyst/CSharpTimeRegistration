@@ -81,23 +81,43 @@ namespace backend.Controllers
         public async Task<IActionResult> CreateTimeRegistration([FromBody] CreateTimeRegistrationDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            var result = await _timeRegistrationService.CreateTimeRegistrationAsync(dto, userId);
+            var isAdmin = User.IsInRole("Admin");
+
+            var result = await _timeRegistrationService.CreateTimeRegistrationAsync(dto, userId, isAdmin);
             return Ok(result);
         }
+
+
 
         [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTimeRegistration(int id)
         {
-            var success = await _timeRegistrationService.DeleteTimeRegistrationAsync(id);
-            if (!success)
-                return NotFound();
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            return NoContent();
+                var isAdmin = User.IsInRole("Admin");
+
+                var entity = await _timeRegistrationService.GetEntityByIdAsync(id);
+                if (entity is null) return NotFound();
+
+                if (!isAdmin && entity.UserId != userId)
+                    return Forbid();
+
+                var dto = await _timeRegistrationService.GetTimeRegistrationById(id.ToString());
+                return Ok(dto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Couldn't fetch time registration");
+                return StatusCode(500, "Couldn't fetch time registration");
+            }
         }
+
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}/status")]
