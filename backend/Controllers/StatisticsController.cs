@@ -6,7 +6,7 @@ namespace backend.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    [Authorize(Roles = "Admin")] // apply once at controller level
+    [Authorize(Roles = "Admin")]
     public class StatisticsController : ControllerBase
     {
         private readonly ITimeRegistrationService _service;

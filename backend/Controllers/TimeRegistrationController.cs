@@ -90,7 +90,6 @@ namespace backend.Controllers
         }
 
 
-
         [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTimeRegistration(int id)

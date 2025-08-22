@@ -48,8 +48,7 @@ namespace backend.Services
             CreateTimeRegistrationDto dto, string userId, bool isAdmin)
         {
             var project = await _context.Projects.FindAsync(dto.ProjectId);
-            if (project == null)
-                throw new InvalidOperationException("Project not found.");
+            if (project == null) throw new InvalidOperationException("Project not found.");
             if (!string.Equals(project.Status, "Ongoing", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("You can only register time on ongoing projects.");
 
@@ -70,7 +69,7 @@ namespace backend.Services
             {
                 UserId = userId,
                 ProjectId = dto.ProjectId,
-                Date = dto.Date, // or dto.Date.Date to normalize
+                Date = dto.Date,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
                 Hours = Math.Round(duration.TotalHours, 2),
