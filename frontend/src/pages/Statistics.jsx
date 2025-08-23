@@ -2,10 +2,46 @@ import { useEffect, useMemo, useState } from "react";
 import { AgCharts } from "ag-charts-react";
 import {
   getProjectTotals,
+  getProjectTotalsMonthly,
+  getProjectTotalsWeekly,
   getUserTotalsForProject,
   getSingleUserProjectHours,
   GetAllProjects,
 } from "../api/authAPI";
+
+const toValidDate = (v) => {
+  const d = v instanceof Date ? v : new Date(v);
+  return isNaN(d) ? null : d;
+};
+
+const getCurrentIsoWeekBounds = () => {
+  const today = new Date();
+  const day = today.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(today.getDate() + diffToMonday);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const toISO = (d) => d.toISOString().slice(0, 10);
+  return { from: toISO(monday), to: toISO(sunday) };
+};
+
+const formatWeekLabel = (start) => {
+  const d = toValidDate(start);
+  if (!d) return String(start ?? "");
+  const end = new Date(d);
+  end.setDate(d.getDate() + 6);
+  const fmt = (x) => x.toLocaleDateString("en-GB");
+  return `${fmt(d)} – ${fmt(end)}`;
+};
+
+const formatMonthStart_ddmmyyyy = (year, month) => {
+  const d = new Date(year, month - 1, 1);
+  return d.toLocaleDateString("en-GB");
+};
 
 const Statistics = () => {
   const [projectTotals, setProjectTotals] = useState([]);
@@ -15,17 +51,43 @@ const Statistics = () => {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [singleUserHours, setSingleUserHours] = useState(null);
 
+  const [timeline, setTimeline] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  useEffect(() => {
+    if (timeline === "weekly") {
+      const { from, to } = getCurrentIsoWeekBounds();
+      setFrom(from);
+      setTo(to);
+    }
+  }, [timeline]);
+
+  const buildParams = () => {
+    const params = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    return params;
+  };
+
   useEffect(() => {
     const load = async () => {
-      const [totalsRes, projectsRes] = await Promise.all([
-        getProjectTotals(),
-        GetAllProjects(),
-      ]);
-      setProjectTotals(totalsRes.data || []);
+      const [projectsRes] = await Promise.all([GetAllProjects()]);
       setProjects(projectsRes.data || []);
+
+      const params = buildParams();
+      let totalsRes;
+      if (timeline === "monthly") {
+        totalsRes = await getProjectTotalsMonthly(params);
+      } else if (timeline === "weekly") {
+        totalsRes = await getProjectTotalsWeekly(params);
+      } else {
+        totalsRes = await getProjectTotals(params);
+      }
+      setProjectTotals(totalsRes.data || []);
     };
     load().catch(console.error);
-  }, []);
+  }, [timeline, from, to]);
 
   useEffect(() => {
     setSelectedUserId("");
@@ -34,23 +96,70 @@ const Statistics = () => {
       setUsersForProject([]);
       return;
     }
-    getUserTotalsForProject(selectedProjectId)
+    const params = buildParams();
+    getUserTotalsForProject(selectedProjectId, params)
       .then((res) => setUsersForProject(res.data || []))
       .catch(console.error);
-  }, [selectedProjectId]);
+  }, [selectedProjectId, timeline, from, to]);
 
   useEffect(() => {
     if (!selectedProjectId || !selectedUserId) {
       setSingleUserHours(null);
       return;
     }
-    getSingleUserProjectHours(selectedProjectId, selectedUserId)
+    const params = buildParams();
+    getSingleUserProjectHours(selectedProjectId, selectedUserId, params)
       .then((res) => setSingleUserHours(res.data ?? 0))
       .catch(console.error);
-  }, [selectedProjectId, selectedUserId]);
+  }, [selectedProjectId, selectedUserId, timeline, from, to]);
 
-  const totalsChartOptions = useMemo(
-    () => ({
+  const totalsChartOptions = useMemo(() => {
+    if (timeline === "monthly") {
+      return {
+        data: projectTotals.map((x) => ({
+          label: `${x.projectName} ${formatMonthStart_ddmmyyyy(
+            x.year,
+            x.month
+          )}`,
+          totalHours: x.totalHours,
+        })),
+        series: [
+          {
+            type: "bar",
+            xKey: "label",
+            yKey: "totalHours",
+            tooltip: { enabled: true },
+          },
+        ],
+        axes: [
+          { type: "category", position: "bottom" },
+          { type: "number", position: "left", title: { text: "Hours" } },
+        ],
+        title: { text: "Monthly Hours per Project" },
+      };
+    }
+    if (timeline === "weekly") {
+      return {
+        data: projectTotals.map((x) => ({
+          label: `${x.projectName} ${formatWeekLabel(x.weekStart)}`,
+          totalHours: x.totalHours,
+        })),
+        series: [
+          {
+            type: "bar",
+            xKey: "label",
+            yKey: "totalHours",
+            tooltip: { enabled: true },
+          },
+        ],
+        axes: [
+          { type: "category", position: "bottom" },
+          { type: "number", position: "left", title: { text: "Hours" } },
+        ],
+        title: { text: "Weekly Hours per Project" },
+      };
+    }
+    return {
       data: projectTotals,
       series: [
         {
@@ -61,21 +170,18 @@ const Statistics = () => {
         },
       ],
       axes: [
-        { type: "category", position: "bottom", label: { rotation: 0 } },
+        { type: "category", position: "bottom" },
         { type: "number", position: "left", title: { text: "Hours" } },
       ],
-      title: { text: "Total Hours per Project (All Users)" },
-    }),
-    [projectTotals]
-  );
+      title: { text: "Total Hours per Project (All Time)" },
+    };
+  }, [projectTotals, timeline]);
 
   const usersChartOptions = useMemo(
     () => ({
-      data: usersForProject.map((user) => ({
-        userName:
-          `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
-          user.userId,
-        totalHours: user.totalHours,
+      data: usersForProject.map((u) => ({
+        userName: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.userId,
+        totalHours: u.totalHours,
       })),
       series: [
         {
@@ -96,6 +202,44 @@ const Statistics = () => {
 
   return (
     <div className="space-y-8">
+      <section className="bg-white p-4 rounded-xl shadow flex flex-wrap items-end gap-4">
+        <div>
+          <label className="block text-sm mb-1">Timeline</label>
+          <select
+            className="border rounded px-3 py-2"
+            value={timeline}
+            onChange={(e) => setTimeline(e.target.value)}
+          >
+            <option value="all">All time</option>
+            <option value="monthly">Monthly</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm mb-1">From</label>
+          <input
+            type="date"
+            className="border rounded px-3 py-2"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            disabled={timeline === "weekly"}
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">To</label>
+          <input
+            type="date"
+            className="border rounded px-3 py-2"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            disabled={timeline === "weekly"}
+          />
+        </div>
+        <div className="text-sm text-zinc-500">
+          (Leave dates empty for full range)
+        </div>
+      </section>
+
       <section className="bg-white p-4 rounded-xl shadow">
         <AgCharts options={totalsChartOptions} />
       </section>
@@ -126,10 +270,9 @@ const Statistics = () => {
             disabled={!selectedProjectId}
           >
             <option value="">All users</option>
-            {usersForProject.map((user) => (
-              <option key={user.userId} value={user.userId}>
-                {`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
-                  user.userId}
+            {usersForProject.map((u) => (
+              <option key={u.userId} value={u.userId}>
+                {`${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.userId}
               </option>
             ))}
           </select>
@@ -141,7 +284,9 @@ const Statistics = () => {
           usersForProject.length ? (
             <AgCharts options={usersChartOptions} />
           ) : (
-            <p className="text-zinc-500">No hours yet for this project.</p>
+            <p className="text-zinc-500">
+              No hours yet for this project (with current filters).
+            </p>
           )
         ) : (
           <p className="text-zinc-500">

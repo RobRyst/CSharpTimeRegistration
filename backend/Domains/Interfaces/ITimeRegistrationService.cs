@@ -14,17 +14,11 @@ namespace backend.Domains.Interfaces
         Task<TimeRegistrationDto?> UpdateTimeRegistrationAsync(int id, UpdateTimeRegistrationDto dto, string userId, bool isAdmin);
         Task<TimeRegistration?> GetEntityByIdAsync(int id);
 
-        // ------------------ Stats ----------------------
-        Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(
-            DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
+        Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
+        Task<IEnumerable<ProjectHoursMonthlyDto>> GetMonthlyHoursPerProjectAsync(DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
+        Task<IEnumerable<ProjectHoursWeeklyDto>> GetWeeklyHoursPerProjectAsync(DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
 
-        Task<IEnumerable<ProjectHoursMonthlyDto>> GetMonthlyHoursPerProjectAsync(
-            DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
-
-        Task<IEnumerable<ProjectHoursWeeklyDto>> GetWeeklyHoursPerProjectAsync(
-            DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
-
-        Task<IEnumerable<UserProjectHoursDto>> GetHoursPerUserForProjectAsync(int projectId, CancellationToken ct = default);
-        Task<double> GetHoursForUserOnProjectAsync(int projectId, string userId, CancellationToken ct = default);
+        Task<IEnumerable<UserProjectHoursDto>> GetHoursPerUserForProjectAsync(int projectId, DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
+        Task<double> GetHoursForUserOnProjectAsync(int projectId, string userId, DateTime? from = null, DateTime? to = null, CancellationToken ct = default);
     }
 }

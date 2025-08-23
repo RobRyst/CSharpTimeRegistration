@@ -91,29 +91,34 @@ namespace backend.Controllers
 
 
         [Authorize]
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteTimeRegistration(int id)
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(userId)) return Unauthorized();
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized();
 
                 var isAdmin = User.IsInRole("Admin");
 
                 var entity = await _timeRegistrationService.GetEntityByIdAsync(id);
-                if (entity is null) return NotFound();
+                if (entity is null)
+                    return NotFound();
 
                 if (!isAdmin && entity.UserId != userId)
                     return Forbid();
 
-                var dto = await _timeRegistrationService.GetTimeRegistrationById(id.ToString());
-                return Ok(dto);
+                var success = await _timeRegistrationService.DeleteTimeRegistrationAsync(id);
+                if (!success)
+                    return NotFound();
+
+                return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Couldn't fetch time registration");
-                return StatusCode(500, "Couldn't fetch time registration");
+                _logger.LogError(ex, "Error deleting TimeRegistration with id {Id}", id);
+                return StatusCode(500, "An error occurred while deleting the time registration.");
             }
         }
 
@@ -133,21 +138,39 @@ namespace backend.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("overview.pdf")]
-        public async Task<IActionResult> ExportOverviewPdf([FromQuery] string? status = null)
+        public async Task<IActionResult> ExportOverviewPdf(
+            DateTime? from = null,
+            DateTime? to = null,
+            string? userId = null,
+            string? status = null)
         {
             var rows = await _timeRegistrationService.GetAllTimeRegistrationDtos();
 
+            if (!string.IsNullOrWhiteSpace(userId))
+                rows = rows.Where(r => r.UserId == userId);
+
             if (!string.IsNullOrWhiteSpace(status))
                 rows = rows.Where(r => string.Equals(r.Status, status, StringComparison.OrdinalIgnoreCase));
-            rows = rows.OrderBy(r => r.ProjectName).ThenBy(r => r.Date).ThenBy(r => r.StartTime);
 
-            var title = $"Time Registrations — {(string.IsNullOrWhiteSpace(status) ? "All" : status)}";
+            if (from.HasValue)
+                rows = rows.Where(r => r.Date.Date >= from.Value.Date);
+
+            if (to.HasValue)
+                rows = rows.Where(r => r.Date.Date <= to.Value.Date);
+
+            rows = rows
+                .OrderBy(r => r.ProjectName)
+                .ThenBy(r => r.Date)
+                .ThenBy(r => r.StartTime);
+
+            var title = "Time Registrations — Export";
             var doc = new UserOverviewPDF(rows, title);
             var bytes = doc.GeneratePdf();
-            var fileName = $"time-registrations-overview-{(status ?? "all").ToLowerInvariant()}-{DateTime.UtcNow:yyyyMMdd-HHmm}.pdf";
+            var fileName = $"time-registrations-{DateTime.UtcNow:yyyyMMdd-HHmm}.pdf";
 
             return File(bytes, "application/pdf", fileName);
         }
+
         [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTimeRegistration(int id, [FromBody] UpdateTimeRegistrationDto dto)

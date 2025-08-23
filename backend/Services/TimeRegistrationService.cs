@@ -145,12 +145,18 @@ namespace backend.Services
             });
         }
 
-        public async Task<IEnumerable<UserProjectHoursDto>> GetHoursPerUserForProjectAsync(int projectId, CancellationToken ct = default)
+        public async Task<IEnumerable<UserProjectHoursDto>> GetHoursPerUserForProjectAsync(
+            int projectId, DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
         {
-            return await _context.TimeRegistrations
+            var q = _context.TimeRegistrations
                 .Include(tr => tr.User)
                 .Include(tr => tr.Project)
-                .Where(tr => tr.ProjectId == projectId && tr.Status == "Accepted")
+                .Where(tr => tr.ProjectId == projectId && tr.Status == "Accepted");
+
+            if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
+            if (to.HasValue) q = q.Where(tr => tr.Date < to.Value.Date.AddDays(1));
+
+            return await q
                 .GroupBy(tr => new { tr.UserId, tr.User!.FirstName, tr.User!.LastName, tr.ProjectId, tr.Project!.Name })
                 .Select(g => new UserProjectHoursDto
                 {
@@ -165,12 +171,19 @@ namespace backend.Services
                 .ToListAsync(ct);
         }
 
-        public async Task<double> GetHoursForUserOnProjectAsync(int projectId, string userId, CancellationToken ct = default)
+
+        public async Task<double> GetHoursForUserOnProjectAsync(
+            int projectId, string userId, DateTime? from = null, DateTime? to = null, CancellationToken ct = default)
         {
-            return await _context.TimeRegistrations
-                .Where(tr => tr.ProjectId == projectId && tr.UserId == userId && tr.Status == "Accepted")
-                .SumAsync(tr => tr.Hours, ct);
+            var q = _context.TimeRegistrations
+                .Where(tr => tr.ProjectId == projectId && tr.UserId == userId && tr.Status == "Accepted");
+
+            if (from.HasValue) q = q.Where(tr => tr.Date >= from.Value.Date);
+            if (to.HasValue) q = q.Where(tr => tr.Date < to.Value.Date.AddDays(1));
+
+            return await q.SumAsync(tr => tr.Hours, ct);
         }
+
 
         public async Task<bool> DeleteTimeRegistrationAsync(int id)
         {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import {
@@ -6,23 +6,62 @@ import {
   GetTimeRegistrationsForUser,
   updateTimeStatus,
   exportProjectsPdf,
+  exportTimeRegistrationsPdf,
   updateTimeRegistration,
 } from "../api/authAPI";
 import Swal from "sweetalert2";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
+const toDateOnlyUTC = (d) => {
+  const dt = d instanceof Date ? d : new Date(d);
+  return new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+};
+const toISODate = (d) => toDateOnlyUTC(d).toISOString().slice(0, 10);
+
+const getCurrentIsoWeekBounds = () => {
+  const today = new Date();
+  const day = today.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(today.getDate() + diffToMonday);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  return {
+    from: toDateOnlyUTC(monday),
+    to: toDateOnlyUTC(sunday),
+  };
+};
+
+const getCurrentMonthBounds = () => {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0));
+  return { from: start, to: end };
+};
+
+const isInRangeInclusive = (dateLike, from, to) => {
+  const d = toDateOnlyUTC(dateLike);
+  return (!from || d >= from) && (!to || d <= to);
+};
+
 const UserOverview = () => {
   const [rowData, setRowData] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+
+  // Filters
+  const [timeline, setTimeline] = useState("all");
+  const [selectedUserId, setSelectedUserId] = useState("");
 
   const extractUserIdFromToken = useCallback(() => {
     const token = localStorage.getItem("token");
     if (!token) return { userId: null, isAdmin: false };
 
     const payload = JSON.parse(atob(token.split(".")[1]));
-
     const rolesClaim =
       payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
     const isAdmin = Array.isArray(rolesClaim)
@@ -63,6 +102,35 @@ const UserOverview = () => {
     });
   }, [load]);
 
+  const people = useMemo(() => {
+    const map = new Map();
+    for (const r of rowData || []) {
+      const uid = r.userId || "";
+      const label =
+        `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() || uid || "Unknown";
+      if (uid && !map.has(uid)) map.set(uid, label);
+    }
+    return Array.from(map.entries())
+      .map(([userId, label]) => ({ userId, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [rowData]);
+
+  const filteredRows = useMemo(() => {
+    let rows = Array.isArray(rowData) ? rowData : [];
+    if (selectedUserId) {
+      rows = rows.filter((r) => r.userId === selectedUserId);
+    }
+    if (timeline === "weekly") {
+      const { from, to } = getCurrentIsoWeekBounds();
+      rows = rows.filter((r) => isInRangeInclusive(r.date, from, to));
+    } else if (timeline === "monthly") {
+      const { from, to } = getCurrentMonthBounds();
+      rows = rows.filter((r) => isInRangeInclusive(r.date, from, to));
+    }
+
+    return rows;
+  }, [rowData, timeline, selectedUserId]);
+
   const handleUpdateStatus = async (id, status) => {
     try {
       await updateTimeStatus(id, status);
@@ -101,17 +169,12 @@ const UserOverview = () => {
   const canEdit = (row) => {
     if (!currentUserId) return false;
     if (row.userId !== currentUserId) return false;
-
-    const d = new Date(row.date);
-    const today = new Date();
-    const toUTCDate = (dt) =>
-      Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    const d = toDateOnlyUTC(row.date);
+    const today = toDateOnlyUTC(new Date());
     const diffDays = Math.abs(
-      Math.floor((toUTCDate(today) - toUTCDate(d)) / (24 * 60 * 60 * 1000))
+      Math.floor((today.getTime() - d.getTime()) / (24 * 60 * 60 * 1000))
     );
-    if (diffDays > 30) return false;
-
-    return true;
+    return diffDays <= 30;
   };
 
   const onEditOwn = async (row) => {
@@ -165,10 +228,8 @@ const UserOverview = () => {
           return;
         }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const d = new Date(dateStr);
-        d.setHours(0, 0, 0, 0);
+        const today = toDateOnlyUTC(new Date());
+        const d = toDateOnlyUTC(dateStr);
         const days = Math.abs((today - d) / (24 * 60 * 60 * 1000));
         if (days > 30) {
           Swal.showValidationMessage(
@@ -242,7 +303,7 @@ const UserOverview = () => {
   };
 
   const columnDefs = useMemo(() => {
-    const cols = [
+    return [
       {
         field: "id",
         headerName: "ID",
@@ -293,10 +354,9 @@ const UserOverview = () => {
         suppressHeaderContextMenu: true,
       },
     ];
-    return cols;
   }, [isAdmin, currentUserId]);
 
-  const exportPdf = async (status) => {
+  const exportPdfAll = async (status) => {
     try {
       const res = await exportProjectsPdf(status);
       const blob = new Blob([res.data], { type: "application/pdf" });
@@ -317,36 +377,118 @@ const UserOverview = () => {
     }
   };
 
+  const exportPdfCurrentView = async () => {
+    if (!isAdmin) {
+      Swal.fire("Unavailable", "Only admins can export the PDF.", "info");
+      return;
+    }
+
+    const params = {};
+    if (selectedUserId) params.userId = selectedUserId;
+
+    if (timeline === "weekly") {
+      const { from, to } = getCurrentIsoWeekBounds();
+      params.from = toISODate(from);
+      params.to = toISODate(to);
+    } else if (timeline === "monthly") {
+      const { from, to } = getCurrentMonthBounds();
+      params.from = toISODate(from);
+      params.to = toISODate(to);
+    }
+
+    try {
+      const res = await exportTimeRegistrationsPdf(params);
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const userPart = selectedUserId ? `user-${selectedUserId}-` : "";
+      a.href = url;
+      a.download = `time-registrations-${userPart}${timeline}-${new Date()
+        .toISOString()
+        .slice(0, 16)
+        .replace(/[:T]/g, "-")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      Swal.fire("Error", "Could not export filtered PDF", "error");
+    }
+  };
+
   return (
-    <div className="ag-theme-alpine" style={{ height: 600, width: "100%" }}>
-      {isAdmin && (
-        <div className="flex gap-2 mb-2">
-          <button
-            onClick={() => exportPdf()}
-            className="px-3 py-2 rounded bg-slate-700 text-white"
+    <div style={{ width: "100%" }}>
+      <div className="flex flex-wrap items-end gap-3 mb-3">
+        <div>
+          <label className="block text-sm mb-1">Timeline</label>
+          <select
+            className="border rounded px-3 py-2"
+            value={timeline}
+            onChange={(e) => setTimeline(e.target.value)}
           >
-            Export PDF (All)
-          </button>
-          <button
-            onClick={() => exportPdf("Ongoing")}
-            className="px-3 py-2 rounded bg-indigo-600 text-white"
-          >
-            Export PDF (Ongoing)
-          </button>
+            <option value="all">All time</option>
+            <option value="monthly">This month</option>
+            <option value="weekly">This week (Mon–Sun)</option>
+          </select>
         </div>
-      )}
-      <AgGridReact
-        rowData={rowData}
-        columnDefs={columnDefs}
-        defaultColDef={{ resizable: true, flex: 1 }}
-        getRowClass={(p) =>
-          p.data?.status === "Declined"
-            ? "bg-red-50"
-            : p.data?.status === "Accepted"
-            ? "bg-green-50"
-            : undefined
-        }
-      />
+
+        <div>
+          <label className="block text-sm mb-1">Person</label>
+          <select
+            className="border rounded px-3 py-2 min-w-[220px]"
+            value={selectedUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
+          >
+            <option value="">All people</option>
+            {people.map((p) => (
+              <option key={p.userId} value={p.userId}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {isAdmin && (
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={() => exportPdfAll()}
+              className="px-3 py-2 rounded bg-slate-700 text-white"
+            >
+              Export PDF (All)
+            </button>
+            <button
+              onClick={() => exportPdfAll("Ongoing")}
+              className="px-3 py-2 rounded bg-indigo-600 text-white"
+            >
+              Export PDF (Ongoing)
+            </button>
+
+            <button
+              onClick={exportPdfCurrentView}
+              className="px-3 py-2 rounded bg-emerald-600 text-white"
+              title="Downloads a PDF based on the current timeline and selected person"
+            >
+              Export PDF (Current View)
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="ag-theme-alpine" style={{ height: 600, width: "100%" }}>
+        <AgGridReact
+          rowData={filteredRows}
+          columnDefs={columnDefs}
+          defaultColDef={{ resizable: true, flex: 1 }}
+          getRowClass={(p) =>
+            p.data?.status === "Declined"
+              ? "bg-red-50"
+              : p.data?.status === "Accepted"
+              ? "bg-green-50"
+              : undefined
+          }
+        />
+      </div>
     </div>
   );
 };
