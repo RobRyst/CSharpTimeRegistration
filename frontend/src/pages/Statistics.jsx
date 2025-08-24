@@ -56,18 +56,23 @@ const Statistics = () => {
   const [to, setTo] = useState("");
 
   useEffect(() => {
-    if (timeline === "weekly") {
-      const { from, to } = getCurrentIsoWeekBounds();
-      setFrom(from);
-      setTo(to);
+    if (timeline !== "all") {
+      setFrom("");
+      setTo("");
     }
   }, [timeline]);
 
   const buildParams = () => {
-    const params = {};
-    if (from) params.from = from;
-    if (to) params.to = to;
-    return params;
+    if (timeline === "weekly") {
+      return getCurrentIsoWeekBounds();
+    }
+    if (timeline === "all") {
+      const params = {};
+      if (from) params.from = from;
+      if (to) params.to = to;
+      return params;
+    }
+    return {};
   };
 
   useEffect(() => {
@@ -87,6 +92,7 @@ const Statistics = () => {
       setProjectTotals(totalsRes.data || []);
     };
     load().catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeline, from, to]);
 
   useEffect(() => {
@@ -100,6 +106,7 @@ const Statistics = () => {
     getUserTotalsForProject(selectedProjectId, params)
       .then((res) => setUsersForProject(res.data || []))
       .catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProjectId, timeline, from, to]);
 
   useEffect(() => {
@@ -111,6 +118,7 @@ const Statistics = () => {
     getSingleUserProjectHours(selectedProjectId, selectedUserId, params)
       .then((res) => setSingleUserHours(res.data ?? 0))
       .catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProjectId, selectedUserId, timeline, from, to]);
 
   const totalsChartOptions = useMemo(() => {
@@ -215,29 +223,33 @@ const Statistics = () => {
             <option value="weekly">Weekly</option>
           </select>
         </div>
-        <div>
-          <label className="block text-sm mb-1">From</label>
-          <input
-            type="date"
-            className="border rounded px-3 py-2"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            disabled={timeline === "weekly"}
-          />
-        </div>
-        <div>
-          <label className="block text-sm mb-1">To</label>
-          <input
-            type="date"
-            className="border rounded px-3 py-2"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            disabled={timeline === "weekly"}
-          />
-        </div>
-        <div className="text-sm text-zinc-500">
-          (Leave dates empty for full range)
-        </div>
+
+        {/* Show date range ONLY for 'All time' */}
+        {timeline === "all" && (
+          <>
+            <div>
+              <label className="block text-sm mb-1">From</label>
+              <input
+                type="date"
+                className="border rounded px-3 py-2"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">To</label>
+              <input
+                type="date"
+                className="border rounded px-3 py-2"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
+            </div>
+            <div className="text-sm text-zinc-500">
+              (Leave dates empty for full range)
+            </div>
+          </>
+        )}
       </section>
 
       <section className="bg-white p-4 rounded-xl shadow">

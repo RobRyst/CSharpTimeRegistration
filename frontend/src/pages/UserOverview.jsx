@@ -26,14 +26,9 @@ const getCurrentIsoWeekBounds = () => {
   const monday = new Date(today);
   monday.setHours(0, 0, 0, 0);
   monday.setDate(today.getDate() + diffToMonday);
-
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-
-  return {
-    from: toDateOnlyUTC(monday),
-    to: toDateOnlyUTC(sunday),
-  };
+  return { from: toDateOnlyUTC(monday), to: toDateOnlyUTC(sunday) };
 };
 
 const getCurrentMonthBounds = () => {
@@ -52,10 +47,18 @@ const UserOverview = () => {
   const [rowData, setRowData] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
-
-  // Filters
   const [timeline, setTimeline] = useState("all");
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  useEffect(() => {
+    if (timeline !== "all") {
+      setFromDate("");
+      setToDate("");
+    }
+  }, [timeline]);
 
   const extractUserIdFromToken = useCallback(() => {
     const token = localStorage.getItem("token");
@@ -117,19 +120,26 @@ const UserOverview = () => {
 
   const filteredRows = useMemo(() => {
     let rows = Array.isArray(rowData) ? rowData : [];
-    if (selectedUserId) {
-      rows = rows.filter((r) => r.userId === selectedUserId);
-    }
+
+    if (selectedUserId) rows = rows.filter((r) => r.userId === selectedUserId);
+
     if (timeline === "weekly") {
       const { from, to } = getCurrentIsoWeekBounds();
       rows = rows.filter((r) => isInRangeInclusive(r.date, from, to));
     } else if (timeline === "monthly") {
       const { from, to } = getCurrentMonthBounds();
       rows = rows.filter((r) => isInRangeInclusive(r.date, from, to));
+    } else if (timeline === "all") {
+      const from = fromDate ? toDateOnlyUTC(fromDate) : null;
+      const to = toDate ? toDateOnlyUTC(toDate) : null;
+      if (from || to)
+        rows = rows.filter((r) => isInRangeInclusive(r.date, from, to));
     }
+    if (statusFilter)
+      rows = rows.filter((r) => (r.status || "Pending") === statusFilter);
 
     return rows;
-  }, [rowData, timeline, selectedUserId]);
+  }, [rowData, selectedUserId, timeline, fromDate, toDate, statusFilter]);
 
   const handleUpdateStatus = async (id, status) => {
     try {
@@ -167,6 +177,7 @@ const UserOverview = () => {
   };
 
   const canEdit = (row) => {
+    if (isAdmin) return true;
     if (!currentUserId) return false;
     if (row.userId !== currentUserId) return false;
     const d = toDateOnlyUTC(row.date);
@@ -228,14 +239,16 @@ const UserOverview = () => {
           return;
         }
 
-        const today = toDateOnlyUTC(new Date());
-        const d = toDateOnlyUTC(dateStr);
-        const days = Math.abs((today - d) / (24 * 60 * 60 * 1000));
-        if (days > 30) {
-          Swal.showValidationMessage(
-            "Only entries within ±30 days can be edited"
-          );
-          return;
+        if (!isAdmin) {
+          const today = toDateOnlyUTC(new Date());
+          const d = toDateOnlyUTC(dateStr);
+          const days = Math.abs((today - d) / (24 * 60 * 60 * 1000));
+          if (days > 30) {
+            Swal.showValidationMessage(
+              "Only entries within ±30 days can be edited"
+            );
+            return;
+          }
         }
 
         return {
@@ -302,8 +315,8 @@ const UserOverview = () => {
     ) : null;
   };
 
-  const columnDefs = useMemo(() => {
-    return [
+  const columnDefs = useMemo(
+    () => [
       {
         field: "id",
         headerName: "ID",
@@ -343,7 +356,7 @@ const UserOverview = () => {
         cellRenderer: StatusCell,
       },
       {
-        headerName: "My Actions",
+        headerName: "Actions",
         field: "myActions",
         sortable: false,
         filter: false,
@@ -353,8 +366,9 @@ const UserOverview = () => {
         suppressHeaderMenuButton: true,
         suppressHeaderContextMenu: true,
       },
-    ];
-  }, [isAdmin, currentUserId]);
+    ],
+    [isAdmin, currentUserId]
+  );
 
   const exportPdfAll = async (status) => {
     try {
@@ -394,7 +408,12 @@ const UserOverview = () => {
       const { from, to } = getCurrentMonthBounds();
       params.from = toISODate(from);
       params.to = toISODate(to);
+    } else if (timeline === "all") {
+      if (fromDate) params.from = fromDate;
+      if (toDate) params.to = toDate;
     }
+
+    if (statusFilter) params.status = statusFilter;
 
     try {
       const res = await exportTimeRegistrationsPdf(params);
@@ -402,8 +421,9 @@ const UserOverview = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       const userPart = selectedUserId ? `user-${selectedUserId}-` : "";
+      const statusPart = statusFilter ? `status-${statusFilter}-` : "";
       a.href = url;
-      a.download = `time-registrations-${userPart}${timeline}-${new Date()
+      a.download = `time-registrations-${userPart}${statusPart}${timeline}-${new Date()
         .toISOString()
         .slice(0, 16)
         .replace(/[:T]/g, "-")}.pdf`;
@@ -449,6 +469,47 @@ const UserOverview = () => {
           </select>
         </div>
 
+        {/* Admin-only: Status filter */}
+        {isAdmin && (
+          <div>
+            <label className="block text-sm mb-1">Status</label>
+            <select
+              className="border rounded px-3 py-2"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="Pending">Pending</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Declined">Declined</option>
+            </select>
+          </div>
+        )}
+
+        {/* Date range only when "All time" */}
+        {timeline === "all" && (
+          <>
+            <div>
+              <label className="block text-sm mb-1">From</label>
+              <input
+                type="date"
+                className="border rounded px-3 py-2"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">To</label>
+              <input
+                type="date"
+                className="border rounded px-3 py-2"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
         {isAdmin && (
           <div className="ml-auto flex gap-2">
             <button
@@ -458,16 +519,9 @@ const UserOverview = () => {
               Export PDF (All)
             </button>
             <button
-              onClick={() => exportPdfAll("Ongoing")}
-              className="px-3 py-2 rounded bg-indigo-600 text-white"
-            >
-              Export PDF (Ongoing)
-            </button>
-
-            <button
               onClick={exportPdfCurrentView}
               className="px-3 py-2 rounded bg-emerald-600 text-white"
-              title="Downloads a PDF based on the current timeline and selected person"
+              title="Downloads a PDF based on the current filters"
             >
               Export PDF (Current View)
             </button>
