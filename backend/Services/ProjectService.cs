@@ -26,7 +26,6 @@ namespace backend.Services
             });
         }
 
-        // Only projects users can pick — Ongoing
         public async Task<IEnumerable<ProjectDto>> GetAvailableProjects()
         {
             var projects = await _context.Projects

@@ -469,7 +469,6 @@ const UserOverview = () => {
           </select>
         </div>
 
-        {/* Admin-only: Status filter */}
         {isAdmin && (
           <div>
             <label className="block text-sm mb-1">Status</label>
@@ -486,7 +485,6 @@ const UserOverview = () => {
           </div>
         )}
 
-        {/* Date range only when "All time" */}
         {timeline === "all" && (
           <>
             <div>

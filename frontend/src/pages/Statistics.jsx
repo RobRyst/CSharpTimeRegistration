@@ -224,7 +224,6 @@ const Statistics = () => {
           </select>
         </div>
 
-        {/* Show date range ONLY for 'All time' */}
         {timeline === "all" && (
           <>
             <div>

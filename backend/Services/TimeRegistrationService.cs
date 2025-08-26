@@ -200,7 +200,7 @@ namespace backend.Services
             var entity = await _context.TimeRegistrations.FindAsync(id);
             if (entity == null) return false;
 
-            entity.Status = status; // consider validating Allowed statuses
+            entity.Status = status;
             await _context.SaveChangesAsync();
             return true;
         }
@@ -273,7 +273,7 @@ namespace backend.Services
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        // ------------------ Stats (date-filtered) ----------------------
+        // ------------------ Stats ----------------------
 
         public async Task<IEnumerable<ProjectHoursDto>> GetTotalHoursPerProjectAsync(
             DateTime? from = null, DateTime? to = null, CancellationToken ct = default)

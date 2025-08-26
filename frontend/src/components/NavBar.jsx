@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { NavLink } from "react-router-dom";
 import LogoutBtn from "./Logoutbtn";
 import { useEffect, useState } from "react";
 
@@ -23,40 +23,44 @@ const NavBar = () => {
     }
   }, []);
 
+  const linkClass =
+    "text-zinc-200 hover:text-white transition font-medium text-base";
+
   return (
-    <>
-      <div className="flex flex-row justify-between items-center bg-zinc-800">
-        <div>
-          <h1 className="text-6xl text-white p-5">
-            <NavLink to="/">Time</NavLink>
+    <header className="bg-zinc-800 shadow-md">
+      <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex h-30 items-center justify-between">
+          <h1 className="text-3xl font-bold text-white">
+            <NavLink to="/" className="hover:text-zinc-300 transition">
+              Time Registration
+            </NavLink>
           </h1>
-        </div>
-        <div>
-          <nav className="flex gap-10 px-5">
-            <NavLink to="/" className="text-white">
+
+          <nav className="flex items-center gap-10">
+            <NavLink to="/" className={linkClass}>
               Home
             </NavLink>
             {isAdmin && (
               <>
-                <NavLink to="/projects" className="text-white">
+                <NavLink to="/projects" className={linkClass}>
                   Projects
                 </NavLink>
-                <NavLink to="/statistics" className="text-white">
+                <NavLink to="/statistics" className={linkClass}>
                   Statistics
                 </NavLink>
               </>
             )}
-            <NavLink to="/overview" className="text-white">
+            <NavLink to="/overview" className={linkClass}>
               Overview
             </NavLink>
-            <NavLink to="/profile" className="text-white">
+            <NavLink to="/profile" className={linkClass}>
               Profile
             </NavLink>
             <LogoutBtn />
           </nav>
         </div>
       </div>
-    </>
+    </header>
   );
 };
 
