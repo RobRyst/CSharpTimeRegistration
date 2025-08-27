@@ -111,6 +111,14 @@ namespace backend.Services
         {
             var project = await _context.Projects.FindAsync(id);
             if (project == null) return false;
+
+            var hasRefs = await _context.TimeRegistrations
+                .AsNoTracking()
+                .AnyAsync(tr => tr.ProjectId == id);
+
+            if (hasRefs)
+                throw new InvalidOperationException("Cannot delete: project has time registrations.");
+
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync();
             return true;

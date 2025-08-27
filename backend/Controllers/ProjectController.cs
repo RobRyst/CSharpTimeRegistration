@@ -6,6 +6,7 @@ using backend.PDFs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 
 namespace backend.Controllers
@@ -68,9 +69,20 @@ namespace backend.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(int id)
         {
-            var ok = await _projectService.DeleteProjectById(id);
-            if (!ok) return NotFound();
-            return NoContent();
+            try
+            {
+                var ok = await _projectService.DeleteProjectById(id);
+                if (!ok) return NotFound();
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new { message = "Cannot delete project because it is referenced by other records." });
+            }
         }
     }
 }

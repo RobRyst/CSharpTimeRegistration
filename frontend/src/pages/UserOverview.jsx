@@ -8,6 +8,7 @@ import {
   exportProjectsPdf,
   exportTimeRegistrationsPdf,
   updateTimeRegistration,
+  deleteTimeRegistration,
 } from "../api/authAPI";
 import Swal from "sweetalert2";
 
@@ -49,6 +50,7 @@ const UserOverview = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [timeline, setTimeline] = useState("all");
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedProjectName, setSelectedProjectName] = useState(""); // 🔧 filter by name
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -118,6 +120,18 @@ const UserOverview = () => {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [rowData]);
 
+  // ✅ Build the project list from *names* (backend sends ProjectName but not ProjectId)
+  const projects = useMemo(() => {
+    const set = new Set();
+    for (const r of rowData || []) {
+      const name = (r.projectName ?? r.project?.name ?? "").trim();
+      if (name) set.add(name);
+    }
+    return Array.from(set)
+      .sort((a, b) => a.localeCompare(b))
+      .map((label) => ({ label, value: label }));
+  }, [rowData]);
+
   const filteredRows = useMemo(() => {
     let rows = Array.isArray(rowData) ? rowData : [];
 
@@ -135,11 +149,28 @@ const UserOverview = () => {
       if (from || to)
         rows = rows.filter((r) => isInRangeInclusive(r.date, from, to));
     }
+
     if (statusFilter)
       rows = rows.filter((r) => (r.status || "Pending") === statusFilter);
 
+    if (selectedProjectName) {
+      rows = rows.filter(
+        (r) =>
+          (r.projectName ?? r.project?.name ?? "").trim() ===
+          selectedProjectName
+      );
+    }
+
     return rows;
-  }, [rowData, selectedUserId, timeline, fromDate, toDate, statusFilter]);
+  }, [
+    rowData,
+    selectedUserId,
+    selectedProjectName, // ← make sure table updates when you change the dropdown
+    timeline,
+    fromDate,
+    toDate,
+    statusFilter,
+  ]);
 
   const handleUpdateStatus = async (id, status) => {
     try {
@@ -187,6 +218,7 @@ const UserOverview = () => {
     );
     return diffDays <= 30;
   };
+  const canDelete = (row) => canEdit(row);
 
   const onEditOwn = async (row) => {
     const pad = (n) => String(n).padStart(2, "0");
@@ -266,7 +298,7 @@ const UserOverview = () => {
 
     try {
       const payload = {
-        projectId: row.projectId ?? null,
+        // projectId not editable here; leave as-is
         date: formValues.date,
         startTime: formValues.startTime,
         endTime: formValues.endTime,
@@ -303,16 +335,55 @@ const UserOverview = () => {
     }
   };
 
+  const onDelete = async (row) => {
+    const res = await Swal.fire({
+      title: "Delete time registration?",
+      text: "This cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    });
+    if (!res.isConfirmed) return;
+
+    try {
+      await deleteTimeRegistration(row.id);
+      setRowData((prev) => prev.filter((r) => r.id !== row.id));
+      Swal.fire("Deleted", "Time registration removed", "success");
+    } catch (e) {
+      console.error(e);
+      const msg =
+        e?.response?.data?.message ||
+        e?.response?.data ||
+        "Could not delete time registration";
+      Swal.fire("Error", String(msg), "error");
+    }
+  };
+
   const ActionsCell = (p) => {
     const row = p.data;
-    return canEdit(row) ? (
-      <button
-        className="px-2 py-1 rounded text-white bg-sky-600"
-        onClick={() => onEditOwn(row)}
-      >
-        Edit
-      </button>
-    ) : null;
+    const showEdit = canEdit(row);
+    const showDelete = canDelete(row);
+    if (!showEdit && !showDelete) return null;
+    return (
+      <div className="flex items-center gap-2">
+        {showEdit && (
+          <button
+            className="px-2 py-1 rounded text-white bg-sky-600"
+            onClick={() => onEditOwn(row)}
+          >
+            Edit
+          </button>
+        )}
+        {showDelete && (
+          <button
+            className="px-2 py-1 rounded text-white bg-rose-600"
+            onClick={() => onDelete(row)}
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    );
   };
 
   const columnDefs = useMemo(
@@ -361,7 +432,7 @@ const UserOverview = () => {
         sortable: false,
         filter: false,
         cellRenderer: ActionsCell,
-        width: 120,
+        width: 160,
         pinned: "right",
         suppressHeaderMenuButton: true,
         suppressHeaderContextMenu: true,
@@ -414,6 +485,7 @@ const UserOverview = () => {
     }
 
     if (statusFilter) params.status = statusFilter;
+    // If your backend later accepts project filtering, add: params.projectName = selectedProjectName;
 
     try {
       const res = await exportTimeRegistrationsPdf(params);
@@ -422,8 +494,11 @@ const UserOverview = () => {
       const a = document.createElement("a");
       const userPart = selectedUserId ? `user-${selectedUserId}-` : "";
       const statusPart = statusFilter ? `status-${statusFilter}-` : "";
+      const projectPart = selectedProjectName
+        ? `project-${selectedProjectName}-`
+        : "";
       a.href = url;
-      a.download = `time-registrations-${userPart}${statusPart}${timeline}-${new Date()
+      a.download = `time-registrations-${userPart}${projectPart}${statusPart}${timeline}-${new Date()
         .toISOString()
         .slice(0, 16)
         .replace(/[:T]/g, "-")}.pdf`;
@@ -463,6 +538,22 @@ const UserOverview = () => {
             <option value="">All people</option>
             {people.map((p) => (
               <option key={p.userId} value={p.userId}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm mb-1">Project</label>
+          <select
+            className="border rounded px-3 py-2 min-w-[220px]"
+            value={selectedProjectName}
+            onChange={(e) => setSelectedProjectName(e.target.value)}
+          >
+            <option value="">All projects</option>
+            {projects.map((p) => (
+              <option key={p.value} value={p.value}>
                 {p.label}
               </option>
             ))}
@@ -532,6 +623,7 @@ const UserOverview = () => {
           rowData={filteredRows}
           columnDefs={columnDefs}
           defaultColDef={{ resizable: true, flex: 1 }}
+          getRowId={(p) => String(p.data.id)}
           getRowClass={(p) =>
             p.data?.status === "Declined"
               ? "bg-red-50"
