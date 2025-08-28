@@ -298,7 +298,6 @@ const UserOverview = () => {
 
     try {
       const payload = {
-        // projectId not editable here; leave as-is
         date: formValues.date,
         startTime: formValues.startTime,
         endTime: formValues.endTime,
@@ -393,46 +392,81 @@ const UserOverview = () => {
         headerName: "ID",
         sortable: true,
         filter: true,
-        maxWidth: 100,
+        width: 90,
+        maxWidth: 110,
       },
-      { field: "userId", headerName: "User ID", sortable: true, filter: true },
+      {
+        field: "userId",
+        headerName: "User ID",
+        sortable: true,
+        filter: true,
+        width: 160,
+      },
       {
         field: "firstName",
         headerName: "First Name",
         sortable: true,
         filter: true,
+        width: 140,
       },
       {
         field: "lastName",
         headerName: "Last Name",
         sortable: true,
         filter: true,
+        width: 140,
       },
       {
         field: "projectName",
         headerName: "Project",
         sortable: true,
         filter: true,
+        flex: 1,
+        minWidth: 180,
       },
-      { field: "date", headerName: "Date", sortable: true, filter: true },
-      { field: "startTime", headerName: "Start Time", sortable: true },
-      { field: "endTime", headerName: "End Time", sortable: true },
-      { field: "hours", headerName: "Hours", sortable: true },
-      { field: "comment", headerName: "Comment", sortable: true },
+      {
+        field: "date",
+        headerName: "Date",
+        sortable: true,
+        filter: true,
+        width: 130,
+      },
+      {
+        field: "startTime",
+        headerName: "Start Time",
+        sortable: true,
+        width: 120,
+      },
+      { field: "endTime", headerName: "End Time", sortable: true, width: 120 },
+      {
+        field: "hours",
+        headerName: "Hours",
+        sortable: true,
+        width: 100,
+        maxWidth: 110,
+        valueFormatter: (p) =>
+          p.value != null ? Number(p.value).toFixed(2) : "",
+      },
+      {
+        field: "comment",
+        headerName: "Comment",
+        sortable: true,
+        flex: 1,
+        minWidth: 100,
+      },
       {
         field: "status",
         headerName: "Status",
         sortable: true,
         filter: true,
+        width: 140,
         cellRenderer: StatusCell,
       },
       {
         headerName: "Actions",
         field: "myActions",
-        sortable: false,
-        filter: false,
         cellRenderer: ActionsCell,
-        width: 160,
+        width: 170,
         pinned: "right",
         suppressHeaderMenuButton: true,
         suppressHeaderContextMenu: true,
@@ -485,7 +519,6 @@ const UserOverview = () => {
     }
 
     if (statusFilter) params.status = statusFilter;
-    // If your backend later accepts project filtering, add: params.projectName = selectedProjectName;
 
     try {
       const res = await exportTimeRegistrationsPdf(params);
@@ -622,7 +655,7 @@ const UserOverview = () => {
         <AgGridReact
           rowData={filteredRows}
           columnDefs={columnDefs}
-          defaultColDef={{ resizable: true, flex: 1 }}
+          defaultColDef={{ resizable: true }}
           getRowId={(p) => String(p.data.id)}
           getRowClass={(p) =>
             p.data?.status === "Declined"

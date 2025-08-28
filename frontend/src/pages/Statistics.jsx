@@ -185,9 +185,13 @@ const Statistics = () => {
     };
   }, [projectTotals, timeline]);
 
-  const usersChartOptions = useMemo(
-    () => ({
-      data: usersForProject.map((u) => ({
+  const usersChartOptions = useMemo(() => {
+    const list = selectedUserId
+      ? usersForProject.filter((u) => u.userId === selectedUserId)
+      : usersForProject;
+
+    return {
+      data: list.map((u) => ({
         userName: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.userId,
         totalHours: u.totalHours,
       })),
@@ -204,9 +208,8 @@ const Statistics = () => {
         { type: "number", position: "left", title: { text: "Hours" } },
       ],
       title: { text: "Hours per User (Selected Project)" },
-    }),
-    [usersForProject]
-  );
+    };
+  }, [usersForProject, selectedUserId]);
 
   return (
     <div className="space-y-8">
