@@ -1,9 +1,9 @@
-#Time Registration
+# Time Registration
 
 A full-stack application for tracking time, managing projects, and generating statistics with PDF exports.
 Built with ASP.NET Core, Entity Framework, React, and modern UI libraries.
 
-##📌 Project Overview
+## 📌 Project Overview
 
 TimeTrackPro is a full-stack time registration system that enables:
 
@@ -19,8 +19,8 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 🗑️ Edit & delete capabilities with role-aware restrictions
 
-##🚀 Tech Stack
-###⚙️ Backend (API)
+## 🚀 Tech Stack
+### ⚙️ Backend (API)
 
 - .NET 8 / C# – ASP.NET Core Web API
 
@@ -32,7 +32,7 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 - ILogger – Centralized error logging
 
-##💻 Frontend (Web App)
+## 💻 Frontend (Web App)
 
 - React 18 + Vite – Fast SPA frontend
 
@@ -46,8 +46,8 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 - Tailwind CSS + shadcn/ui – Modern UI components & styling
 
-##✨ Features
-###⏱️ Time Registration
+## ✨ Features
+### ⏱️ Time Registration
 
 - Add, edit, and delete time entries (with role restrictions)
 
@@ -55,7 +55,7 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 - Validation (only ±30 days for regular users, unlimited for admins)
 
-##📦 Project Management
+## 📦 Project Management
 
 - Create, update, and delete projects
 
@@ -63,7 +63,7 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 - Status-based filtering (Pending, Ongoing, Completed, Cancelled)
 
-##📊 Statistics & Reporting
+## 📊 Statistics & Reporting
 
 - Hours per project (all-time, monthly, weekly)
 
@@ -73,7 +73,7 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 - Visual charts with AG Charts
 
-##🧾 PDF Export
+## 🧾 PDF Export
 
 - Export all projects overview
 
@@ -81,7 +81,7 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 - Download user/project statistics
 
-##⚠️ Logging & Error Handling
+## ⚠️ Logging & Error Handling
 
 - Full error messages displayed in SweetAlert2 dialogs
 
@@ -89,7 +89,7 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 - User-friendly validation messages
 
-##🧱 Architecture
+## 🧱 Architecture
 
 - Service Layer – TimeRegistrationService, ProjectService, UserService
 
@@ -99,7 +99,7 @@ TimeTrackPro is a full-stack time registration system that enables:
 
 - Frontend Layer – React components with grids, charts, and dropdown filters
 
-##🧠 What I Learned
+## 🧠 What I Learned
 
 - This project deepened my skills in full-stack app development with a focus on productivity tooling and analytics.
 
